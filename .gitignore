@@ -1,0 +1,8 @@
+.pio
+.clang_complete
+.gcc-flags.json
+.ccls
+include/*
+lib/*
+libbak/*
+test/*
