@@ -11,10 +11,6 @@
 #include "SPI.h"
 
 
-//ScanHead::stepper0 = new Stepper(60, stepper0_pins.A, stepper0_pins.C, stepper0_pins.B, stepper0_pins.D);
-//ScanHead::stepper1 = new Stepper(60, stepper1_pins.A, stepper1_pins.C, stepper1_pins.B, stepper1_pins.D);
-//ScanHead::stepper2 = new Stepper(60, stepper2_pins.A, stepper2_pins.C, stepper2_pins.B, stepper2_pins.D);
-
 
 ScanHead::ScanHead():
     stepper0(60, stepper0_pins.A, stepper0_pins.C, stepper0_pins.B, stepper0_pins.D),
@@ -23,11 +19,6 @@ ScanHead::ScanHead():
 
 {
     // Setting up relevant pins
-
-    //Stepper stepper0(60, stepper0_pins.A, stepper0_pins.C, stepper0_pins.B, stepper0_pins.D);
-    //Stepper stepper1(60, stepper1_pins.A, stepper1_pins.C, stepper1_pins.B, stepper1_pins.D);
-    //Stepper stepper2(60, stepper2_pins.A, stepper2_pins.C, stepper2_pins.B, stepper2_pins.D);
-
 
     // TIA
     pinMode(tia.cs, OUTPUT);
@@ -56,22 +47,31 @@ ScanHead::ScanHead():
     SPI.transfer(0b00000000);
     SPI.transfer(0b00000001);
     digitalWrite(piezo.cs, HIGH);
-    delay(10);
-
+    delay(1);
 
     // Setting local variables
     xpos = 0;
     ypos = 0;
     zpos = 0;
+    zposStepper = 0;
+    current= 0;
+
+    // Setting piezo to zero
+    setPiezo(piezo.chX_P, 0);
+    setPiezo(piezo.chX_N, 0);
+    setPiezo(piezo.chY_P, 0);
+    setPiezo(piezo.chY_N, 0);
+
+    delay(1);
 }
 
 int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     /*!
-     * \brief Provides PID control over scan head position via piezos. Call until expected return code
+     * \brief Provides PID control over scan head position via piezos. Call until expected return code. Will retract steppers on overcurrent
      * @param xpos_set Desired X position: integer from -32768 to 32768
      * @param ypos_set Desired Y position: integer from -32768 to 32768
      * @param zcurr_set Desired Z current in pA. -1 will provide no height control.
-     * @return 0 if transverse position not yet attained, -1 if position unachievable, 1 if obtained.
+     * @return 0 if transverse position not yet attained, -1 if position unachievable, -2 if overcurrent, 1 if obtained.
      */
 
     /*
@@ -87,8 +87,17 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     int yStepIncrement = (ypos-ypos_set)*pidTransverseP;
     int zStepIncrement = 0;
 
+    current = fetchCurrent();
+
     if (zcurr_set == -1) zStepIncrement = 0;
-    else zStepIncrement = (current_set-fetchCurrent())*pidZP;
+    else zStepIncrement = (zcurr_set-current)*pidZP;
+
+    // checking for overcurrent. If overcurrent, retract and return
+    //
+    if (current > overCurrent) {
+        moveStepper(-50, 4096);
+        return -2;
+    }
 
     // checking step size, setting step to max size if necessary
 
@@ -147,6 +156,16 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
         chY_N = minPiezo;
     }
 
+    // writing piezos
+
+    setPiezo(piezo.chX_P, chX_P);
+    setPiezo(piezo.chX_N, chX_N);
+    setPiezo(piezo.chY_P, chY_P);
+    setPiezo(piezo.chY_N, chY_N);
+
+    delayMicroseconds(500);
+
+
     if (exceeded_bounds == true) return -1;
     else if (xpos == xpos_set && ypos == ypos_set) return 1;
     else return 0;
@@ -171,14 +190,24 @@ void ScanHead::moveStepper(int steps, int stepRate) {
     stepper1.step(steps);
     stepper2.step(steps);
 
-
+    zposStepper += steps;
 }
 
-int ScanHead::autoApproachStep() {
+int ScanHead::autoApproachStep(int zcurr_set) {
     /*!
-     * \brief Automatically advances Z until surface is detected. Performs one 'step' iteration
+     * \brief Automatically advances Z until surface is detected. Performs one 'step' iteration. Ensure z-position is zeroed before approach
      * @return 0 if surface not yet detected, 1 otherwise
      */
+
+    moveStepper(3, 4096);
+    int approachStatus = 0;
+
+    while (approachStatus == 0) {
+        approachStatus = setPositionStep(0,0,zcurr_set);
+        current = fetchCurrent();
+        if (approachStatus != 0 and approachStatus != 1) break;
+        if (current > zcurr_set) return 1;
+    }
 
     return 0;
 }
@@ -206,7 +235,7 @@ int ScanHead::fetchCurrent() {
         sumVal += receivedVal;
     }
 
-    return sumVal / 5; // might bias results to lower val due to rounding err, but we're ok with this
+    return tiaToCurrent(sumVal / 5); // might bias results to lower val due to rounding err, but we're ok with this
 
 }
 

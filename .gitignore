@@ -2,6 +2,7 @@
 .clang_complete
 .gcc-flags.json
 .ccls
+*.sw?
 include/*
 lib/*
 libbak/*

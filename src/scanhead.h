@@ -15,6 +15,7 @@ class ScanHead
     public:
         ScanHead();
 
+        int current;
 
         int xpos;
         int ypos;
@@ -22,9 +23,8 @@ class ScanHead
         int zposStepper;
         int setPositionStep(int xpos_set, int ypos_set, int zcurr_set);
         void moveStepper(int steps, int stepRate);
-        int autoApproachStep();
+        int autoApproachStep(int zcurr_set);
         int fetchCurrent();
-
 
     private:
 
@@ -69,15 +69,16 @@ class ScanHead
         } stepper2_pins;
 
         const float calibratedNoCurrent = 5625.0; // no-current TIA reading, empirical
-        const int   pidTransverseP = 200; // gain term in PID control for transverse axes
-        const int   pidZP = 200; // gain term in PID control for Z axis
+        const int   pidTransverseP = 1; // gain term in PID control for transverse axes
+        const int   pidZP = 1; // gain term in PID control for Z axis
         const int   maxPiezo = 65535; // maximum valuable attainable by a single piezo channel
         const int   minPiezo = 0; // minimum valuable attainable by a single piezo channel
 
         const int maxTransverseStep = 100; // largest one-cycle piezo step on the x-axis
         const int maxZStep = 100;
 
-        const int current_set = 300;
+        const int currentSet = 300;    // 0.3nA
+        const int overCurrent = 20000; // 20nA
 
 };
 
