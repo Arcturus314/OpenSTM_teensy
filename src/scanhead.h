@@ -8,6 +8,7 @@
 #define scanhead_h
 
 #include "Arduino.h"
+#include "Stepper.h"
 
 class ScanHead
 {
@@ -19,15 +20,28 @@ class ScanHead
         int ypos;
         int zpos;
         int zposStepper;
-        int setPositionStep(int xpos, int ypos, int zpos);
+        int setPositionStep(int xpos_set, int ypos_set, int zcurr_set);
         void moveStepper(int steps, int stepRate);
         int autoApproachStep();
         int fetchCurrent();
+
+
     private:
 
+        int currentToTia(int currentpA);
+        int tiaToCurrent(int currentTIA);
+        void setPiezo(int channel, int value);
+
+        Stepper stepper0;
+        Stepper stepper1;
+        Stepper stepper2;
 
         struct piezo_struct {
             const int cs = 10;
+            const int chX_P = 1;
+            const int chY_P = 3;
+            const int chY_N = 5;
+            const int chX_N = 7;
         } piezo;
 
         struct tia_struct {
@@ -54,8 +68,16 @@ class ScanHead
             const int D = 24;
         } stepper2_pins;
 
+        const float calibratedNoCurrent = 5625.0; // no-current TIA reading, empirical
+        const int   pidTransverseP = 200; // gain term in PID control for transverse axes
+        const int   pidZP = 200; // gain term in PID control for Z axis
+        const int   maxPiezo = 65535; // maximum valuable attainable by a single piezo channel
+        const int   minPiezo = 0; // minimum valuable attainable by a single piezo channel
 
-        void moveSingleStepper(int stepper);
+        const int maxTransverseStep = 100; // largest one-cycle piezo step on the x-axis
+        const int maxZStep = 100;
+
+        const int current_set = 300;
 
 };
 
