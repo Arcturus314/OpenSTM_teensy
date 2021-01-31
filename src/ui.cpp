@@ -178,4 +178,22 @@ void UI::drawDisplay(ScanHead* scanhead) {
     display.println(scanhead->current);
 
     display.display();
+
+    plotBarsLog(scanhead->current);
+}
+
+void UI::drawDisplayErr(int error) {
+
+    // initial setup
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+
+    // printing error message
+    display.print("ERROR ");
+    display.setCursor(100,0);
+    display.print(error);
+
+    display.display();
 }

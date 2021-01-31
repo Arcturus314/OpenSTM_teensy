@@ -184,11 +184,13 @@ void ScanHead::moveStepper(int steps, int stepRate) {
      */
 
     status = 1;
-    stepper0.setSpeed(stepRate);
-    stepper1.setSpeed(stepRate);
-    stepper2.setSpeed(stepRate);
+    stepper0.setSpeed(abs(stepRate));
+    stepper1.setSpeed(abs(stepRate));
+    stepper2.setSpeed(abs(stepRate));
 
     // right now, we're stepping each stepper sequentially. This shouldn't matter - the steppers are approx. equidistant from the sample
+
+    if (stepRate < 0) steps *= -1;
 
     stepper0.step(steps);
     stepper1.step(steps);
@@ -202,6 +204,8 @@ int ScanHead::autoApproachStep(int zcurr_set) {
      * \brief Automatically advances Z until surface is detected. Performs one 'step' iteration. Ensure z-position is zeroed before approach
      * @return 0 if surface not yet detected, 1 otherwise
      */
+
+    setpoint = zcurr_set;
 
     moveStepper(3, 4096);
     int approachStatus = 0;
@@ -286,4 +290,44 @@ void ScanHead::setPiezo(int channel, int value) {
   SPI.transfer(addrD2);
   SPI.transfer(addrD3);
   digitalWrite(piezo.cs, HIGH);
+}
+
+int ScanHead::scanOneAxis(int *currents, int *zpos, int size, bool direction, bool heightControl) {
+    /*!
+     * \brief scans size piezo LSBs across X axis with optional height control. Writes z positions and currents to arrays
+     * @param *currents Pointer to size long array to store currents
+     * @param *zpos Pointer to size long array to store z positions
+     * @param size number of piezo LSBs to scan over
+     * @param direction true to scan in +x, false to scan in -x
+     * @param heightControl true if height control enabled, false otherwise
+     */
+
+    int xStarting = xpos;
+    int xEnding   = xpos-size;
+    if (direction) xEnding = xpos+size;
+
+    int xTarget = xStarting;
+
+    int setCurrent = setpoint;
+    if (!heightControl) setCurrent = -1; // no height control if -1 passed to setPositionStep
+
+    int numSteps = 0;
+
+    while (xpos != xEnding) {
+
+        int setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
+        while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
+
+        currents[numSteps] = current;
+        zpos[numSteps] = zpos;
+
+        if (setPositionStatus != 1) return setPositionStatus;
+
+        if (direction) xTarget += 1;
+        else xTarget -= 1;
+        numSteps += 1;
+    }
+
+    return 0;
+
 }

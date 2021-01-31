@@ -20,7 +20,7 @@ class UI
     public:
         UI();
         void drawDisplay(ScanHead* scanhead);
-        void plotBarsLog(int current);
+        void drawDisplayErr(int error);
         void updateInputs();
 
         struct barPlot_struct {
@@ -63,6 +63,8 @@ class UI
         Encoder enc;
         Adafruit_24bargraph bar;
         Adafruit_SSD1306 display;
+
+        void plotBarsLog(int current);
 
         struct dpad_struct {
             const int l = 15;

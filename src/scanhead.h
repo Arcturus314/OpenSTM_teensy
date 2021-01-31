@@ -32,12 +32,15 @@ class ScanHead
         void moveStepper(int steps, int stepRate);
         int autoApproachStep(int zcurr_set);
         int fetchCurrent();
+        int scanOneAxis(int *currents, int *zpos, int size, bool direction, bool heightcontrol);
 
     private:
 
         int currentToTia(int currentpA);
         int tiaToCurrent(int currentTIA);
         void setPiezo(int channel, int value);
+
+        int setpoint; // current setpoint
 
         Stepper stepper0;
         Stepper stepper1;
