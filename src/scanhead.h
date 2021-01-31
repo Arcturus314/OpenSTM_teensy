@@ -17,6 +17,13 @@ class ScanHead
 
         int current;
 
+        // Current status of the scan head
+        // 0: approach step
+        // 1: approach piezo
+        // 2: scan
+        // 3: overcurrent
+        int status;
+
         int xpos;
         int ypos;
         int zpos;
@@ -78,7 +85,7 @@ class ScanHead
         const int maxZStep = 100;
 
         const int currentSet = 300;    // 0.3nA
-        const int overCurrent = 20000; // 20nA
+        const int overCurrent = 20000; // 20nA, corresponding to 2/3 of TIA FSD
 
 };
 

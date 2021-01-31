@@ -4,7 +4,7 @@
  * Models UI interaction with STM control board
  */
 
-#ifdef ui_h
+#ifndef ui_h
 #define ui_h
 
 #include "scanhead.h"
@@ -20,7 +20,15 @@ class UI
     public:
         UI();
         void drawDisplay(ScanHead* scanhead);
+        void plotBarsLog(int current);
         void updateInputs();
+
+        struct barPlot_struct {
+            int minBound = 50; // pA. This is the minimum value that will be plotted
+            int maxBound = 20000; // 20 nA, corresponding to 2/3 of TIA FSD. This is the maximum value that will be plotted
+            int lowBound = 300; // pA. This is the lower bound of the useful current range
+            int highBound = 3000; // pA. This is the upper bound of the useful current range
+        } barPlot;
 
         struct dpadVals_struct {
             int l = 0;
@@ -41,7 +49,7 @@ class UI
             int sel = 0;
         } encoderVals;
 
-        struct voltageVals_struct = {
+        struct voltageVals_struct {
             int _5        = 0;
             int _10       = 0;
             int _33       = 0;
@@ -52,12 +60,9 @@ class UI
 
     private:
 
-        void plotBarsLog(int current);
-
         Encoder enc;
         Adafruit_24bargraph bar;
         Adafruit_SSD1306 display;
-
 
         struct dpad_struct {
             const int l = 15;
@@ -89,17 +94,14 @@ class UI
             const int _33_expected = 492; // calibrated per-board
         } voltages;
 
-        struct display_struct {
+        struct display_config_struct {
             const int width  = 128;
             const int height = 64;
-        } display;
+        } display_config;
 
         struct debug_struct {
             const int io3 = 18;
         } debug;
-
-        
-
-
+};
 
 #endif

@@ -83,6 +83,8 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
 
     // really shitty p-control
 
+    status = 0;
+
     int xStepIncrement = (xpos-xpos_set)*pidTransverseP;
     int yStepIncrement = (ypos-ypos_set)*pidTransverseP;
     int zStepIncrement = 0;
@@ -95,6 +97,7 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     // checking for overcurrent. If overcurrent, retract and return
     //
     if (current > overCurrent) {
+        status = 3;
         moveStepper(-50, 4096);
         return -2;
     }
@@ -180,6 +183,7 @@ void ScanHead::moveStepper(int steps, int stepRate) {
      * @param stepRate Number of steps per second to increment
      */
 
+    status = 1;
     stepper0.setSpeed(stepRate);
     stepper1.setSpeed(stepRate);
     stepper2.setSpeed(stepRate);
@@ -260,6 +264,14 @@ int ScanHead::tiaToCurrent(int currentTIA) {
 }
 
 void ScanHead::setPiezo(int channel, int value) {
+    /*!
+     * \brief sets piezo channel to raw value
+     * @param channel Raw channel (0-7) to set on TIA
+     * @param value Raw 16-bit value to set to ADC
+     */
+
+  status = 2;
+
   unsigned int dacMSB = highByte(value);
   unsigned int dacLSB = lowByte(value);
 
