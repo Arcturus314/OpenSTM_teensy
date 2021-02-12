@@ -67,42 +67,42 @@ class UI
         void plotBarsLog(int current);
 
         struct dpad_struct {
-            const int l = 15;
-            const int r = 14;
-            const int u = 36;
-            const int d = 35;
-            const int c = 40;
+            static const int l = 15;
+            static const int r = 14;
+            static const int u = 36;
+            static const int d = 35;
+            static const int c = 40;
         } dpad;
 
         struct joystick_struct {
-            const int xax = A9;
-            const int yax = A8;
+            static const int xax = A9;
+            static const int yax = A8;
         } joystick;
 
         struct encoder_struct {
-            const int chA  = 30;
-            const int chB  = 31;
-            const int next = 37;
-            const int sel  = 41;
+            static const int chA  = 30;
+            static const int chB  = 31;
+            static const int next = 37;
+            static const int sel  = 41;
         } encoder;
 
         struct voltages_struct {
-            const int _5 = A7;
-            const int _10 = A6;
-            const int _33 = A5;
-            const int allowedvariance = 20;
-            const int _5_expected = 488; // calibrated per-board
-            const int _10_expected = 573; // calibrated per-board
-            const int _33_expected = 492; // calibrated per-board
+            static const int _5 = A7;
+            static const int _10 = A6;
+            static const int _33 = A5;
+            static const int allowedvariance = 20;
+            static const int _5_expected = 488; // calibrated per-board
+            static const int _10_expected = 573; // calibrated per-board
+            static const int _33_expected = 492; // calibrated per-board
         } voltages;
 
         struct display_config_struct {
-            const int width  = 128;
-            const int height = 64;
+            static const int width  = 128;
+            static const int height = 64;
         } display_config;
 
         struct debug_struct {
-            const int io3 = 18;
+            static const int io3 = 18;
         } debug;
 };
 

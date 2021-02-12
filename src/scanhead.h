@@ -47,35 +47,35 @@ class ScanHead
         Stepper stepper2;
 
         struct piezo_struct {
-            const int cs = 10;
-            const int chX_P = 1;
-            const int chY_P = 3;
-            const int chY_N = 5;
-            const int chX_N = 7;
+            static const int cs = 10;
+            static const int chX_P = 1;
+            static const int chY_P = 3;
+            static const int chY_N = 5;
+            static const int chX_N = 7;
         } piezo;
 
         struct tia_struct {
-            const int cs   = 34;
-            const int din  = 38;
-            const int miso = 39;
+            static const int cs   = 34;
+            static const int din  = 38;
+            static const int miso = 39;
         } tia;
         struct stepper0_struct {
-            const int A = 5;
-            const int B = 4;
-            const int C = 3;
-            const int D = 2;
+            static const int A = 5;
+            static const int B = 4;
+            static const int C = 3;
+            static const int D = 2;
         } stepper0_pins;
         struct stepper1_struct {
-            const int A = 9;
-            const int B = 8;
-            const int C = 7;
-            const int D = 6;
+            static const int A = 9;
+            static const int B = 8;
+            static const int C = 7;
+            static const int D = 6;
         } stepper1_pins;
         struct stepper2_struct {
-            const int A = 32;
-            const int B = 33;
-            const int C = 25;
-            const int D = 24;
+            static const int A = 32;
+            static const int B = 33;
+            static const int C = 25;
+            static const int D = 24;
         } stepper2_pins;
 
         const float calibratedNoCurrent = 5625.0; // no-current TIA reading, empirical

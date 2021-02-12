@@ -11,8 +11,12 @@
 UI::UI():
     enc(encoder.chA, encoder.chB),
     display(display_config.width, display_config.height, &Wire1, -1),
+    //display(128, 64, &Wire1, -1),
     bar()
 {
+
+    Serial.println("Setting up UI");
+
     pinMode(encoder.sel, INPUT);
     pinMode(encoder.next, INPUT);
     pinMode(dpad.l, INPUT);
@@ -21,24 +25,31 @@ UI::UI():
     pinMode(dpad.d, INPUT);
     pinMode(dpad.c, INPUT);
 
+    Serial.println("Setting up Bar");
+
     bar.begin(0x70);
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+
+    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+      Serial.println("SSD1306 init failed");
+    }
+
+    Serial.println("Display on bar");
 
     // fun bar graphics
     for (int i = 0; i < 25; i++) {
-    for (int b = 0; b < i; b++) {
-      bar.setBar(24 - b, LED_GREEN);
-    }
-    for (int b = i; b < 25; b++) {
-      bar.setBar(24 - b, LED_OFF);
-    }
-    bar.writeDisplay();
-    delay(100);
+      for (int b = 0; b < i; b++) {
+        bar.setBar(24 - b, LED_GREEN);
+      }
+      for (int b = i; b < 25; b++) {
+        bar.setBar(24 - b, LED_OFF);
+      }
+      bar.writeDisplay();
+      delay(100);
     }
 
     delay(100);
     for (int b = 0; b < 24; b++) {
-    bar.setBar(b, LED_OFF);
+      bar.setBar(b, LED_OFF);
     }
 
     bar.writeDisplay();
@@ -49,6 +60,8 @@ UI::UI():
     display.setCursor(0, 0);
     display.println("UI init complete");
     display.display();
+
+    Serial.println("UI init complete");
 
     delay(500);
 }
