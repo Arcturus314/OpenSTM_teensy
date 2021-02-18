@@ -33,6 +33,7 @@ class ScanHead
         int autoApproachStep(int zcurr_set);
         int fetchCurrent();
         int scanOneAxis(int *currents, int *zpos, int size, bool direction, bool heightcontrol);
+        void testScanHeadPosition(int numsteps, int stepsize);
 
     private:
 
@@ -52,6 +53,7 @@ class ScanHead
             static const int chY_P = 3;
             static const int chY_N = 5;
             static const int chX_N = 7;
+            static const int samplePad = 0;
         } piezo;
 
         struct tia_struct {
@@ -78,7 +80,7 @@ class ScanHead
             static const int D = 24;
         } stepper2_pins;
 
-        const float calibratedNoCurrent = 5625.0; // no-current TIA reading, empirical
+        const float calibratedNoCurrent = 3532.6; // no-current TIA reading, empirical. Note - stdev of 49, 750 samples
         const int   pidTransverseP = 1; // gain term in PID control for transverse axes
         const int   pidZP = 1; // gain term in PID control for Z axis
         const int   maxPiezo = 65535; // maximum valuable attainable by a single piezo channel

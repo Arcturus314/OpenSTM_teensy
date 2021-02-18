@@ -58,7 +58,9 @@ UI::UI():
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 0);
-    display.println("UI init complete");
+    display.println("UI Init Complete");
+    display.setCursor(0,32);
+    display.println("OpenSTM Control V0.2");
     display.display();
 
     Serial.println("UI init complete");
@@ -72,11 +74,11 @@ void UI::updateInputs() {
     */
 
    // dpad
-   dpadVals.l = digitalRead(dpad.l);
-   dpadVals.r = digitalRead(dpad.r);
-   dpadVals.u = digitalRead(dpad.u);
-   dpadVals.d = digitalRead(dpad.d);
-   dpadVals.c = digitalRead(dpad.c);
+   dpadVals.l = 1^digitalRead(dpad.l);
+   dpadVals.r = 1^digitalRead(dpad.r);
+   dpadVals.u = 1^digitalRead(dpad.u);
+   dpadVals.d = 1^digitalRead(dpad.d);
+   dpadVals.c = 1^digitalRead(dpad.c);
 
    // joystick
    joystickVals.xax = analogRead(joystick.xax);
@@ -84,8 +86,8 @@ void UI::updateInputs() {
 
    // encoder
    encoderVals.encoderPos = enc.read();
-   encoderVals.next = digitalRead(encoder.next);
-   encoderVals.sel = digitalRead(encoder.sel);
+   encoderVals.next = 1^digitalRead(encoder.next);
+   encoderVals.sel = 1^digitalRead(encoder.sel);
 
    // voltages
    voltageVals._5 = analogRead(voltages._5);
@@ -159,9 +161,9 @@ void UI::drawDisplay(ScanHead* scanhead) {
     }
 
     // writing voltage status: will only display voltages when good    
-    display.setCursor(70,0);
+    display.setCursor(55,0);
     if (voltageVals._5_good) display.print("5V");
-    display.setCursor(85,0);
+    display.setCursor(75,0);
     if (voltageVals._10_good) display.print("10V");
     display.setCursor(100,0);
     if (voltageVals._33_good) display.print("3.3V");

@@ -15,25 +15,32 @@ void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &z
      * @param *current: a circular buffer which will hold currents during approach
      */
 
+    while (ui->encoderVals.next == 1) {
+        ui->updateInputs();
+    }
+
+
     // move encoder until user selection
     while (ui->encoderVals.next == 0) {
         ui->updateInputs();
-        scanhead->moveStepper(1, ui->encoderVals.encoderPos*100);
+        scanhead->moveStepper(1, ui->encoderVals.encoderPos);
         current.push(scanhead->current);
         zpos.push(scanhead->zpos);
         ui->drawDisplay(scanhead);
+        //Serial.println(scanhead->fetchCurrent());
     }
 
     // auto approach
-    int autoApproachStatus = 1;
+    int autoApproachStatus = 0;
     int autoApproachSteps = 0;
 
-    while (autoApproachStatus == 1) {
+    while (autoApproachStatus == 0) {
+        Serial.println("approach step");
         autoApproachStatus = scanhead->autoApproachStep(setpoint);
         autoApproachSteps += 1;
         current.push(scanhead->current);
         zpos.push(scanhead->zpos);
-        if (autoApproachSteps % 100 == 0) {
+        if (autoApproachSteps % 1 == 0) {
             ui->drawDisplay(scanhead);
         }
     }
@@ -42,7 +49,7 @@ void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &z
 void setup() {
     // Initial Setup
     Serial.begin(9600);
-    delay(5000);
+    delay(1000); // todo: remove
     Serial.println("OpenSTM V0.1 Startup...");
 
     Serial.println("Initializing ScanHead");
@@ -55,20 +62,23 @@ void setup() {
 
     Serial.println("Startup Complete");
 
+    ui->drawDisplay(scanhead);
+    ui->updateInputs();
+
     // Initial Approach
 
     CircularBuffer<int,1000> currentBuffer;
     CircularBuffer<int,1000> zPosBuffer;
 
-    //Serial.println("Starting Approach");
-    //approachLoop(currentBuffer, zPosBuffer);
-    //Serial.println("Approach Complete. Dumping approach data...");
+    Serial.println("Starting Approach");
+    approachLoop(currentBuffer, zPosBuffer);
+    Serial.println("Approach Complete. Dumping approach data...");
 
-    //for (int i = 0; i < 1000; i++) {
-    //    Serial.print(currentBuffer.first());
-    //    Serial.print(",");
-    //    Serial.println(zPosBuffer.first());
-    //}
+    for (int i = 0; i < 1000; i++) {
+        Serial.print(currentBuffer.first());
+        Serial.print(",");
+        Serial.println(zPosBuffer.first());
+    }
 
 
     //// 1-D Scan, without height control
@@ -120,9 +130,5 @@ void setup() {
 
 
 void loop() {
-    //Serial.println("scan complete...");
-    ui->updateInputs();
-    if (ui->encoderVals.next == 0)
-        Serial.println("next zero");
-    delay(1000);
+    //scanhead->testScanHeadPosition(30000,10);
 }

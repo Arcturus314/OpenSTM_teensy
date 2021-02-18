@@ -62,6 +62,9 @@ ScanHead::ScanHead():
     setPiezo(piezo.chY_P, 0);
     setPiezo(piezo.chY_N, 0);
 
+    // Setting sample piezo
+    setPiezo(piezo.samplePad, 37500); // pad to about -0.5V (empirical)
+
     delay(1);
 }
 
@@ -70,7 +73,7 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
      * \brief Provides PID control over scan head position via piezos. Call until expected return code. Will retract steppers on overcurrent
      * @param xpos_set Desired X position: integer from -32768 to 32768
      * @param ypos_set Desired Y position: integer from -32768 to 32768
-     * @param zcurr_set Desired Z current in pA. -1 will provide no height control.
+     * @param zcurr_set Desired Z current in pA. -1 will provide no height control, -2 will retract.
      * @return 0 if transverse position not yet attained, -1 if position unachievable, -2 if overcurrent, 1 if obtained.
      */
 
@@ -85,14 +88,38 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
 
     status = 0;
 
-    int xStepIncrement = (xpos-xpos_set)*pidTransverseP;
-    int yStepIncrement = (ypos-ypos_set)*pidTransverseP;
+    int xStepIncrement = (xpos_set-xpos)*pidTransverseP;
+    int yStepIncrement = (ypos_set-ypos)*pidTransverseP;
     int zStepIncrement = 0;
+
+    //Serial.println();
+
+    //Serial.print("xpos ");
+    //Serial.print(xpos);
+    //Serial.print(" xpos set ");
+    //Serial.println(xpos_set);
+
+    //Serial.print("ypos ");
+    //Serial.print(ypos);
+    //Serial.print(" ypos set ");
+    //Serial.println(ypos_set);
+
+    //Serial.print("xStepIncrement ");
+    //Serial.println(xStepIncrement);
+    //Serial.print("yStepIncrement ");
+    //Serial.println(xStepIncrement);
 
     current = fetchCurrent();
 
     if (zcurr_set == -1) zStepIncrement = 0;
+    else if (zcurr_set == -2) zStepIncrement = -1 * maxZStep;
     else zStepIncrement = (zcurr_set-current)*pidZP;
+
+    //Serial.print("zcurr_set ");
+    //Serial.print(zcurr_set);
+    //Serial.print(" current ");
+    //Serial.print(current);
+    //Serial.print(" zStepIncrement ");
 
     // checking for overcurrent. If overcurrent, retract and return
     //
@@ -114,10 +141,31 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     ypos += yStepIncrement;
     zpos += zStepIncrement;
 
-    int chX_P = -zpos + xpos;
-    int chX_N = -zpos - xpos;
-    int chY_P = -zpos + ypos;
-    int chY_N = -zpos - ypos;
+    Serial.println(zpos);
+
+    //Serial.print("new xpos ");
+    //Serial.println(xpos);
+
+    //Serial.print("new ypos ");
+    //Serial.println(ypos);
+
+    //Serial.print("new zpos ");
+    //Serial.println(zpos);
+
+
+    int chX_P = maxPiezo/2 + -zpos + xpos;
+    int chX_N = maxPiezo/2 + -zpos - xpos;
+    int chY_P = maxPiezo/2 + -zpos + ypos;
+    int chY_N = maxPiezo/2 + -zpos - ypos;
+
+    //Serial.print("chX_P ");
+    //Serial.println(chX_P);
+    //Serial.print("chX_N ");
+    //Serial.println(chX_N);
+    //Serial.print("chY_P ");
+    //Serial.println(chY_P);
+    //Serial.print("chY_N ");
+    //Serial.println(chY_N);
 
     // checking bounds
 
@@ -168,13 +216,37 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
 
     delayMicroseconds(500);
 
-
-    if (exceeded_bounds == true) return -1;
+    if (exceeded_bounds == true) {
+        //Serial.println("exceeded bounds!");
+        return -1;
+    }
     else if (xpos == xpos_set && ypos == ypos_set) return 1;
     else return 0;
 
 }
 
+void ScanHead::testScanHeadPosition(int numsteps, int stepsize) {
+    int x_start = -1*numsteps/2;
+    int x_end   = numsteps/2;
+
+    int y_start = -1*numsteps/2;
+    int y_end   = numsteps/2;
+
+    for (int xpos_set = x_start; xpos_set < x_end; xpos_set += stepsize) {
+        for (int ypos_set = y_start; ypos_set < y_end; ypos_set += stepsize) {
+            int status = 0;
+            while (status != 1) {
+                status = setPositionStep(ypos_set, ypos_set, -1); // just both for now, rather than doing a raster
+                //Serial.print("xpos: ");
+                //Serial.print(xpos_set);
+                //Serial.print(" ypos: ");
+                //Serial.print(ypos_set);
+                //Serial.print(" return ");
+                //Serial.println(status);
+            }
+        }
+    }
+}
 
 void ScanHead::moveStepper(int steps, int stepRate) {
     /*!
@@ -182,6 +254,13 @@ void ScanHead::moveStepper(int steps, int stepRate) {
      * @param steps Number of steps to move
      * @param stepRate Number of steps per second to increment
      */
+
+    if (stepRate == 0) return;
+
+    //Serial.print("moving with steprate steps ");
+    //Serial.print(stepRate);
+    //Serial.print(" ");
+    //Serial.println(steps);
 
     status = 1;
     stepper0.setSpeed(abs(stepRate));
@@ -197,6 +276,7 @@ void ScanHead::moveStepper(int steps, int stepRate) {
     stepper2.step(steps);
 
     zposStepper += steps;
+
 }
 
 int ScanHead::autoApproachStep(int zcurr_set) {
@@ -207,15 +287,36 @@ int ScanHead::autoApproachStep(int zcurr_set) {
 
     setpoint = zcurr_set;
 
-    moveStepper(3, 4096);
     int approachStatus = 0;
 
-    while (approachStatus == 0) {
+    // first, fully retract the scan head
+
+    while (approachStatus == 0 or approachStatus == 1) {
+        approachStatus = setPositionStep(0,0,-2);
+    }
+
+    // next, move the stepper a few steps forward but less than the maximum scan range
+
+    moveStepper(3, 100);
+    approachStatus = 0;
+
+    // then, approach with piezos
+
+    while (approachStatus == 0 or approachStatus == 1) {
+        //Serial.println("loop step");
         approachStatus = setPositionStep(0,0,zcurr_set);
         current = fetchCurrent();
-        if (approachStatus != 0 and approachStatus != 1) break;
-        if (current > zcurr_set) return 1;
+        //if (approachStatus != 0 and approachStatus != 1) {
+        //    Serial.print("could not approach, returned status ");
+        //    Serial.println(approachStatus);
+        //    break;
+        //}
+        if (current > zcurr_set) {
+           return 1;
+        }
     }
+
+    // current problem - seem to start from 0,0,0, then we index down, then things break. We want to fully retract, then extrude for each step. Right now, there's no way to retract! cuz its dumb
 
     return 0;
 }
@@ -227,7 +328,8 @@ int ScanHead::fetchCurrent() {
      */
 
     int sumVal = 0;
-    for (int i = 0; i < 5; i++) {
+    int numSamples = 5;
+    for (int i = 0; i < numSamples; i++) {
         digitalWrite(tia.cs, LOW);
         delayMicroseconds(1);
         digitalWrite(tia.cs, HIGH);
@@ -243,7 +345,9 @@ int ScanHead::fetchCurrent() {
         sumVal += receivedVal;
     }
 
-    return tiaToCurrent(sumVal / 5); // might bias results to lower val due to rounding err, but we're ok with this
+    current = tiaToCurrent(sumVal / numSamples); 
+
+    return current; // might bias results to lower val due to rounding err, but we're ok with this
 
 }
 
