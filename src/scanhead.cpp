@@ -92,7 +92,7 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     int yStepIncrement = (ypos_set-ypos)*pidTransverseP;
     int zStepIncrement = 0;
 
-    //Serial.println();
+    //Serial.println("IN SETPOSITIONSTEP");
 
     //Serial.print("xpos ");
     //Serial.print(xpos);
@@ -109,7 +109,10 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     //Serial.print("yStepIncrement ");
     //Serial.println(xStepIncrement);
 
+    //Serial.println("fetching current");
+
     current = fetchCurrent();
+
 
     if (zcurr_set == -1) zStepIncrement = 0;
     else if (zcurr_set == -2) zStepIncrement = -1 * maxZStep;
@@ -141,7 +144,7 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     ypos += yStepIncrement;
     zpos += zStepIncrement;
 
-    Serial.println(zpos);
+    //Serial.println(zpos);
 
     //Serial.print("new xpos ");
     //Serial.println(xpos);
@@ -209,19 +212,30 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
 
     // writing piezos
 
+
     setPiezo(piezo.chX_P, chX_P);
     setPiezo(piezo.chX_N, chX_N);
     setPiezo(piezo.chY_P, chY_P);
     setPiezo(piezo.chY_N, chY_N);
 
+
+
     delayMicroseconds(500);
+    
+
 
     if (exceeded_bounds == true) {
         //Serial.println("exceeded bounds!");
         return -1;
     }
-    else if (xpos == xpos_set && ypos == ypos_set) return 1;
-    else return 0;
+    else if (xpos == xpos_set && ypos == ypos_set) {
+        //Serial.println("Reached target, returning");
+        return 1;
+    }
+    else {
+        //Serial.println("Have not reached target, returning");
+        return 0;
+    }
 
 }
 
@@ -378,6 +392,7 @@ void ScanHead::setPiezo(int channel, int value) {
      * @param value Raw 16-bit value to set to ADC
      */
 
+
   status = 2;
 
   unsigned int dacMSB = highByte(value);
@@ -388,15 +403,17 @@ void ScanHead::setPiezo(int channel, int value) {
   byte addrD2  = dacMSB << 4 | dacLSB >> 4;
   byte addrD3  = dacLSB << 4;
 
+
   digitalWrite(piezo.cs, LOW);
   SPI.transfer(command);
   SPI.transfer(addrD1);
   SPI.transfer(addrD2);
   SPI.transfer(addrD3);
   digitalWrite(piezo.cs, HIGH);
+
 }
 
-int ScanHead::scanOneAxis(int *currents, int *zpos, int size, bool direction, bool heightControl) {
+int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool direction, bool heightControl) {
     /*!
      * \brief scans size piezo LSBs across X axis with optional height control. Writes z positions and currents to arrays
      * @param *currents Pointer to size long array to store currents
@@ -405,6 +422,8 @@ int ScanHead::scanOneAxis(int *currents, int *zpos, int size, bool direction, bo
      * @param direction true to scan in +x, false to scan in -x
      * @param heightControl true if height control enabled, false otherwise
      */
+
+    xpos = 0;
 
     int xStarting = xpos;
     int xEnding   = xpos-size;
@@ -417,13 +436,30 @@ int ScanHead::scanOneAxis(int *currents, int *zpos, int size, bool direction, bo
 
     int numSteps = 0;
 
+    Serial.println("scanning x-axis");
+    Serial.print("Start:");
+    Serial.println(xStarting);
+    Serial.print("End:");
+    Serial.println(xEnding);
+
     while (xpos != xEnding) {
 
-        int setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
+        Serial.print("Setting position to:");
+        Serial.println(xTarget);
+
+        Serial.println(current);
+
+        int setPositionStatus = 0;
         while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
 
-        currents[numSteps] = current;
-        zpos[numSteps] = zpos;
+        Serial.print("status:");
+        Serial.println(setPositionStatus);
+
+        Serial.print("zpos:");
+        Serial.println(zpos);
+
+        currentArr[numSteps] = current;
+        zposArr[numSteps] = zpos;
 
         if (setPositionStatus != 1) return setPositionStatus;
 
