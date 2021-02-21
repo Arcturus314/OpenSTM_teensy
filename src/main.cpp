@@ -62,7 +62,7 @@ void setup() {
 
     scanhead = new ScanHead();
     // setting up interrupt for current integration
-    currentSampleTimer.begin(sampleScanHeadCurrent, 100); // sampling every 100us -> 10kHz
+    currentSampleTimer.begin(sampleScanHeadCurrent, 50); // sampling every 50us -> 20kHz
 
     Serial.println("Initializing UI");
 

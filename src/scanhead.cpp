@@ -26,7 +26,7 @@ ScanHead::ScanHead():
     digitalWrite(tia.din, HIGH);
     SPI1.setMISO(tia.miso);
     SPI1.begin();
-    SPI1.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE3));
+    SPI1.beginTransaction(SPISettings(300000, MSBFIRST, SPI_MODE3));
     delay(10);
 
     // Piezo
@@ -57,7 +57,7 @@ ScanHead::ScanHead():
     current = 0;
     currentSum = 0;
     numCurrentSamples = 0;
-   
+
     // Setting piezo to zero
     setPiezo(piezo.chX_P, 0);
     setPiezo(piezo.chX_N, 0);
@@ -214,17 +214,12 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
 
     // writing piezos
 
-
     setPiezo(piezo.chX_P, chX_P);
     setPiezo(piezo.chX_N, chX_N);
     setPiezo(piezo.chY_P, chY_P);
     setPiezo(piezo.chY_N, chY_N);
 
-
-
-    delayMicroseconds(500);
-    
-
+    delay(1);
 
     if (exceeded_bounds == true) {
         //Serial.println("exceeded bounds!");
@@ -321,7 +316,6 @@ int ScanHead::autoApproachStep(int zcurr_set) {
     while (approachStatus == 0 or approachStatus == 1) {
         //Serial.println("loop step");
         approachStatus = setPositionStep(0,0,zcurr_set);
-        current = fetchCurrent();
         //if (approachStatus != 0 and approachStatus != 1) {
         //    Serial.print("could not approach, returned status ");
         //    Serial.println(approachStatus);
