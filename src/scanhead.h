@@ -32,6 +32,7 @@ class ScanHead
         void moveStepper(int steps, int stepRate);
         int autoApproachStep(int zcurr_set);
         int fetchCurrent();
+        void calibrateZeroCurrent();
         void sampleCurrent();
         int scanOneAxis(int *currents, int *zpos, int size, bool direction, bool heightcontrol);
         void testScanHeadPosition(int numsteps, int stepsize);

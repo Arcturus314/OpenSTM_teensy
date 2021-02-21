@@ -58,7 +58,7 @@ void sampleScanHeadCurrent() {
 void setup() {
     // Initial Setup
     Serial.begin(9600);
-    delay(2000); // todo: remove
+    delay(5000); // todo: remove
     Serial.println("OpenSTM V0.1 Startup...");
 
     Serial.println("Initializing ScanHead");
@@ -70,6 +70,9 @@ void setup() {
     Serial.println("Initializing UI");
 
     ui = new UI();
+
+    Serial.println("Calibrating Zero Current");
+    scanhead->calibrateZeroCurrent();
 
     Serial.println("Startup Complete");
 

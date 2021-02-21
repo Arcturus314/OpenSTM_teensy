@@ -67,20 +67,23 @@ ScanHead::ScanHead():
     // Setting sample piezo
     setPiezo(piezo.samplePad, 37500); // pad to about -0.5V (empirical)
 
-    // Calibrating tip zero current
-    for (int i = 0; i < 50; i++) {
-        sampleCurrent();
-        delayMicroseconds(50);
-    }
-
-    calibratedNoCurrent = fetchCurrent();
-
-    Serial.print("calibrated zero-current to ");
-    Serial.print(calibratedNoCurrent);
-    Serial.println("pA");
 
     delay(1);
 }
+
+void ScanHead::calibrateZeroCurrent() {
+    // clearing initial current readout
+    current = fetchCurrent();
+
+    delay(500);
+
+    calibratedNoCurrent = fetchCurrent();
+    Serial.print("Calibrated zero-current to ");
+    Serial.print(calibratedNoCurrent);
+    Serial.println("pA");
+}
+
+
 
 int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     /*!
@@ -375,9 +378,9 @@ int ScanHead::fetchCurrent() {
 
     current = tiaToCurrent(currentSum / numCurrentSamples);
 
-    Serial.print("num samples");
+    Serial.print("Num samples ");
     Serial.println(numCurrentSamples);
-    Serial.print("calc current");
+    Serial.print("Calc current ");
     Serial.println(current);
 
     currentSum = 0;
@@ -404,7 +407,7 @@ int ScanHead::tiaToCurrent(int currentTIA) {
      * @return current in pA
      */
 
-    return (int) ((float)currentTIA - calibratedNoCurrent) * 3.3 / 65536.0 * 10000.0;
+    return (int) ((float)currentTIA) * 3.3 / 65536.0 * 10000.0 - calibratedNoCurrent;
 }
 
 void ScanHead::setPiezo(int channel, int value) {
@@ -466,17 +469,17 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool directio
 
     while (xpos != xEnding) {
 
-        Serial.print("Setting position to:");
-        Serial.println(xTarget);
+        //Serial.print("Setting position to:");
+        //Serial.println(xTarget);
 
         int setPositionStatus = 0;
         while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
 
-        Serial.print("status:");
-        Serial.println(setPositionStatus);
+        //Serial.print("status:");
+        //Serial.println(setPositionStatus);
 
-        Serial.print("zpos:");
-        Serial.println(zpos);
+        //Serial.print("zpos:");
+        //Serial.println(zpos);
 
         currentArr[numSteps] = current;
         zposArr[numSteps] = zpos;
