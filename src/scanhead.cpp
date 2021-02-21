@@ -11,13 +11,11 @@
 #include "SPI.h"
 
 
+static Stepper stepper0(60, ScanHead::stepper0_pins.A, ScanHead::stepper0_pins.C, ScanHead::stepper0_pins.B, ScanHead::stepper0_pins.D);
+static Stepper stepper1(60, ScanHead::stepper1_pins.A, ScanHead::stepper1_pins.C, ScanHead::stepper1_pins.B, ScanHead::stepper1_pins.D);
+static Stepper stepper2(60, ScanHead::stepper2_pins.A, ScanHead::stepper2_pins.C, ScanHead::stepper2_pins.B, ScanHead::stepper2_pins.D);
 
-ScanHead::ScanHead():
-    stepper0(60, stepper0_pins.A, stepper0_pins.C, stepper0_pins.B, stepper0_pins.D),
-    stepper1(60, stepper1_pins.A, stepper1_pins.C, stepper1_pins.B, stepper1_pins.D),
-    stepper2(60, stepper2_pins.A, stepper2_pins.C, stepper2_pins.B, stepper2_pins.D)
-
-{
+ScanHead::ScanHead() {
     // Setting up relevant pins
 
     // TIA
@@ -28,6 +26,8 @@ ScanHead::ScanHead():
     SPI1.begin();
     SPI1.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE3));
     delay(10);
+    // enabling interrupt for current integration
+    currentSampleTimer.begin(sampleCurrent, 100); // sampling current every 100us (10kHz)
 
     // Piezo
     pinMode(piezo.cs, OUTPUT);
@@ -54,7 +54,9 @@ ScanHead::ScanHead():
     ypos = 0;
     zpos = 0;
     zposStepper = 0;
-    current= 0;
+    current=0;
+    currentSum=0;
+    numCurrentSamples=0;
 
     // Setting piezo to zero
     setPiezo(piezo.chX_P, 0);
@@ -335,31 +337,45 @@ int ScanHead::autoApproachStep(int zcurr_set) {
     return 0;
 }
 
+void ScanHead::sampleCurrent() {
+    /*!
+     * \brief takes a single current sample for integration
+     */
+
+    digitalWrite(tia.cs, LOW);
+    delayMicroseconds(1);
+    digitalWrite(tia.cs, HIGH);
+    delayMicroseconds(1);
+    digitalWrite(tia.cs, LOW);
+    int16_t receivedVal_high = (int16_t) SPI1.transfer(0xff);
+    int16_t receivedVal_low  = (int16_t) SPI1.transfer(0xff);
+    delayMicroseconds(1);
+    digitalWrite(tia.cs, HIGH);
+    delayMicroseconds(1);
+    digitalWrite(tia.cs, LOW);
+    int receivedVal = receivedVal_high << 8 | receivedVal_low;
+
+    currentSum += receivedVal;
+    numCurrentSamples += 1;
+}
+
 int ScanHead::fetchCurrent() {
     /*!
-     * \brief Samples current and converts to pA
+     * \brief calculates current from integration, clears current integration
+     * \detail to provide maximum integration time, call this as infrequently as possible
      * @return current in pA
      */
 
-    int sumVal = 0;
-    int numSamples = 5;
-    for (int i = 0; i < numSamples; i++) {
-        digitalWrite(tia.cs, LOW);
-        delayMicroseconds(1);
-        digitalWrite(tia.cs, HIGH);
-        delayMicroseconds(1);
-        digitalWrite(tia.cs, LOW);
-        int16_t receivedVal_high = (int16_t) SPI1.transfer(0xff);
-        int16_t receivedVal_low  = (int16_t) SPI1.transfer(0xff);
-        delayMicroseconds(1);
-        digitalWrite(tia.cs, HIGH);
-        delayMicroseconds(1);
-        digitalWrite(tia.cs, LOW);
-        int receivedVal = receivedVal_high << 8 | receivedVal_low;
-        sumVal += receivedVal;
-    }
 
-    current = tiaToCurrent(sumVal / numSamples); 
+    current = tiaToCurrent(currentSum / numCurrentSamples);
+
+    Serial.print("num samples");
+    Serial.println(numCurrentSamples);
+    Serial.print("calc current");
+    Serial.println(current);
+
+    currentSum = 0;
+    numCurrentSamples = 0;
 
     return current; // might bias results to lower val due to rounding err, but we're ok with this
 
