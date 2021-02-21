@@ -67,6 +67,18 @@ ScanHead::ScanHead():
     // Setting sample piezo
     setPiezo(piezo.samplePad, 37500); // pad to about -0.5V (empirical)
 
+    // Calibrating tip zero current
+    for (int i = 0; i < 50; i++) {
+        sampleCurrent();
+        delayMicroseconds(50);
+    }
+
+    calibratedNoCurrent = fetchCurrent();
+
+    Serial.print("calibrated zero-current to ");
+    Serial.print(calibratedNoCurrent);
+    Serial.println("pA");
+
     delay(1);
 }
 
@@ -456,8 +468,6 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool directio
 
         Serial.print("Setting position to:");
         Serial.println(xTarget);
-
-        Serial.println(current);
 
         int setPositionStatus = 0;
         while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);

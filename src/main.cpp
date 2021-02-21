@@ -10,26 +10,29 @@ int setpoint = 500; // 500pA
 
 IntervalTimer currentSampleTimer;
 
-void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &zpos) {
+void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &zpos, bool userStart) {
     /*!
      * brief: provides manual and automatic control over scan head during stepper aproach
      * @param *zpos: a circular buffer which will hold z positions during approach
      * @param *current: a circular buffer which will hold currents during approach
      */
 
-    while (ui->encoderVals.next == 1) {
-        ui->updateInputs();
-    }
+
+    if (userStart) {
+        while (ui->encoderVals.next == 1) {
+            ui->updateInputs();
+        }
 
 
-    // move encoder until user selection
-    while (ui->encoderVals.next == 0) {
-        ui->updateInputs();
-        scanhead->moveStepper(1, ui->encoderVals.encoderPos);
-        current.push(scanhead->current);
-        zpos.push(scanhead->zpos);
-        ui->drawDisplay(scanhead);
-        //Serial.println(scanhead->fetchCurrent());
+        // move encoder until user selection
+        while (ui->encoderVals.next == 0) {
+            ui->updateInputs();
+            scanhead->moveStepper(1, ui->encoderVals.encoderPos);
+            current.push(scanhead->current);
+            zpos.push(scanhead->zpos);
+            ui->drawDisplay(scanhead);
+            //Serial.println(scanhead->fetchCurrent());
+        }
     }
 
     // auto approach
@@ -55,7 +58,7 @@ void sampleScanHeadCurrent() {
 void setup() {
     // Initial Setup
     Serial.begin(9600);
-    delay(1000); // todo: remove
+    delay(2000); // todo: remove
     Serial.println("OpenSTM V0.1 Startup...");
 
     Serial.println("Initializing ScanHead");
@@ -79,7 +82,7 @@ void setup() {
     CircularBuffer<int,1000> zPosBuffer;
 
     Serial.println("Starting Approach");
-    //approachLoop(currentBuffer, zPosBuffer);
+    //approachLoop(currentBuffer, zPosBuffer, true);
     Serial.println("Approach Complete. Dumping approach data...");
 
     //for (int i = 0; i < 1000; i++) {
@@ -98,43 +101,47 @@ void setup() {
 
     Serial.println("Scanning +x");
 
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 1; i++) {
 
-    scanStatus = scanhead->scanOneAxis(currents1D, zPos1D, 1000, true, false); // scanning on +x
+        scanStatus = scanhead->scanOneAxis(currents1D, zPos1D, 1000, true, false); // scanning on +x
 
-    if (scanStatus != 0) {
-        Serial.print("Encountered scan error ");
-        Serial.println(scanStatus);
-    }
+        ui -> drawDisplay(scanhead);
 
-    Serial.println("Dumping forward x-axis scan");
+        if (scanStatus != 0) {
+            Serial.print("Encountered scan error ");
+            Serial.println(scanStatus);
+        }
 
-    for (int i = 0; i < 1000; i++) {
-        Serial.print(i);
-        Serial.print(",");
-        Serial.print(currents1D[i]);
-        Serial.print(",");
-        Serial.println(zPos1D[i]);
-    }
+        Serial.println("Dumping forward x-axis scan");
 
-    //approachLoop(currentBuffer, zPosBuffer); // returning to setpoint
+        //for (int i = 0; i < 1000; i++) {
+        //    Serial.print(i);
+        //    Serial.print(",");
+        //    Serial.print(currents1D[i]);
+        //    Serial.print(",");
+        //    Serial.println(zPos1D[i]);
+        //}
 
-    Serial.println("Scanning -x");
+        //approachLoop(currentBuffer, zPosBuffer, false); // returning to setpoint
 
-    scanStatus = scanhead->scanOneAxis(currents1D, zPos1D, 1000, false, false); // scanning on -x
+        //Serial.println("Scanning -x");
 
-    if (scanStatus != 0) {
-        Serial.print("Encountered scan error ");
-        Serial.println(scanStatus);
-    }
+        //scanStatus = scanhead->scanOneAxis(currents1D, zPos1D, 1000, false, false); // scanning on -x
 
-    Serial.println("Dumping backward x-axis scan");
+        //ui -> drawDisplay(scanhead);
 
-    for (int i = 0; i < 1000; i++) {
-        Serial.print(currents1D[i]);
-        Serial.print(",");
-        Serial.println(zPos1D[i]);
-    }
+        //if (scanStatus != 0) {
+        //    Serial.print("Encountered scan error ");
+        //    Serial.println(scanStatus);
+        //}
+
+        //Serial.println("Dumping backward x-axis scan");
+
+        //for (int i = 0; i < 1000; i++) {
+        //    Serial.print(currents1D[i]);
+        //    Serial.print(",");
+        //    Serial.println(zPos1D[i]);
+        //}
 
     }
 

@@ -49,6 +49,8 @@ class ScanHead
         int numCurrentSamples;
 
 
+        float calibratedNoCurrent = 0; // This is re-measured when the STM boots.
+
         Stepper stepper0;
         Stepper stepper1;
         Stepper stepper2;
@@ -86,7 +88,6 @@ class ScanHead
             static const int D = 24;
         } stepper2_pins;
 
-        const float calibratedNoCurrent = 3532.6; // no-current TIA reading, empirical. Note - stdev of 49, 750 samples
         const int   pidTransverseP = 1; // gain term in PID control for transverse axes
         const int   pidZP = 1; // gain term in PID control for Z axis
         const int   maxPiezo = 65535; // maximum valuable attainable by a single piezo channel
@@ -98,6 +99,7 @@ class ScanHead
         const int currentSet = 300;    // 0.3nA
         const int overCurrent = 20000; // 20nA, corresponding to 2/3 of TIA FSD
 
+        // const float calibratedNoCurrent = 3532.6; // no-current TIA reading, empirical. Note - stdev of 49, 750 samples
 };
 
 #endif
