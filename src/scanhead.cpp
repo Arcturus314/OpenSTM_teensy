@@ -54,8 +54,10 @@ ScanHead::ScanHead():
     ypos = 0;
     zpos = 0;
     zposStepper = 0;
-    current= 0;
-
+    current = 0;
+    currentSum = 0;
+    numCurrentSamples = 0;
+   
     // Setting piezo to zero
     setPiezo(piezo.chX_P, 0);
     setPiezo(piezo.chX_N, 0);
@@ -335,31 +337,45 @@ int ScanHead::autoApproachStep(int zcurr_set) {
     return 0;
 }
 
+void ScanHead::sampleCurrent() {
+    /*!
+     * \brief takes a single current sample for integration
+     */
+
+    digitalWrite(tia.cs, LOW);
+    delayMicroseconds(1);
+    digitalWrite(tia.cs, HIGH);
+    delayMicroseconds(1);
+    digitalWrite(tia.cs, LOW);
+    int16_t receivedVal_high = (int16_t) SPI1.transfer(0xff);
+    int16_t receivedVal_low  = (int16_t) SPI1.transfer(0xff);
+    delayMicroseconds(1);
+    digitalWrite(tia.cs, HIGH);
+    delayMicroseconds(1);
+    digitalWrite(tia.cs, LOW);
+    int receivedVal = receivedVal_high << 8 | receivedVal_low;
+
+    currentSum += receivedVal;
+    numCurrentSamples += 1;
+}
+
 int ScanHead::fetchCurrent() {
     /*!
-     * \brief Samples current and converts to pA
+     * \brief calculates current from integration, clears current integration
+     * \detail to provide maximum integration time, call this as infrequently as possible
      * @return current in pA
      */
 
-    int sumVal = 0;
-    int numSamples = 5;
-    for (int i = 0; i < numSamples; i++) {
-        digitalWrite(tia.cs, LOW);
-        delayMicroseconds(1);
-        digitalWrite(tia.cs, HIGH);
-        delayMicroseconds(1);
-        digitalWrite(tia.cs, LOW);
-        int16_t receivedVal_high = (int16_t) SPI1.transfer(0xff);
-        int16_t receivedVal_low  = (int16_t) SPI1.transfer(0xff);
-        delayMicroseconds(1);
-        digitalWrite(tia.cs, HIGH);
-        delayMicroseconds(1);
-        digitalWrite(tia.cs, LOW);
-        int receivedVal = receivedVal_high << 8 | receivedVal_low;
-        sumVal += receivedVal;
-    }
 
-    current = tiaToCurrent(sumVal / numSamples); 
+    current = tiaToCurrent(currentSum / numCurrentSamples);
+
+    Serial.print("num samples");
+    Serial.println(numCurrentSamples);
+    Serial.print("calc current");
+    Serial.println(current);
+
+    currentSum = 0;
+    numCurrentSamples = 0;
 
     return current; // might bias results to lower val due to rounding err, but we're ok with this
 

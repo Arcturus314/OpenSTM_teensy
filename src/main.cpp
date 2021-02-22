@@ -8,6 +8,8 @@ UI *ui;
 
 int setpoint = 500; // 500pA
 
+IntervalTimer currentSampleTimer;
+
 void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &zpos) {
     /*!
      * brief: provides manual and automatic control over scan head during stepper aproach
@@ -46,6 +48,10 @@ void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &z
     }
 }
 
+void sampleScanHeadCurrent() {
+    scanhead->sampleCurrent();
+}
+
 void setup() {
     // Initial Setup
     Serial.begin(9600);
@@ -55,6 +61,8 @@ void setup() {
     Serial.println("Initializing ScanHead");
 
     scanhead = new ScanHead();
+    // setting up interrupt for current integration
+    currentSampleTimer.begin(sampleScanHeadCurrent, 100); // sampling every 100us -> 10kHz
 
     Serial.println("Initializing UI");
 
