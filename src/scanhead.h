@@ -9,6 +9,7 @@
 
 #include "Arduino.h"
 #include "Stepper.h"
+#include "tiafilter.cpp"
 
 class ScanHead
 {
@@ -38,6 +39,8 @@ class ScanHead
         void testScanHeadPosition(int numsteps, int stepsize);
 
     private:
+
+        TIAFilter filter;
 
         int currentToTia(int currentpA);
         int tiaToCurrent(int currentTIA);

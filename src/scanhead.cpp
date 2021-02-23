@@ -15,7 +15,8 @@
 ScanHead::ScanHead():
     stepper0(60, stepper0_pins.A, stepper0_pins.C, stepper0_pins.B, stepper0_pins.D),
     stepper1(60, stepper1_pins.A, stepper1_pins.C, stepper1_pins.B, stepper1_pins.D),
-    stepper2(60, stepper2_pins.A, stepper2_pins.C, stepper2_pins.B, stepper2_pins.D)
+    stepper2(60, stepper2_pins.A, stepper2_pins.C, stepper2_pins.B, stepper2_pins.D),
+    filter();
 
 {
     // Setting up relevant pins
@@ -364,7 +365,7 @@ void ScanHead::sampleCurrent() {
     digitalWrite(tia.cs, LOW);
     int receivedVal = receivedVal_high << 8 | receivedVal_low;
 
-    currentSum += receivedVal;
+    currentSum += filter.step( (float) receivedVal);
     numCurrentSamples += 1;
 }
 
