@@ -42,6 +42,8 @@ class ScanHead
 
         TIAFilter filter;
 
+        const bool enableSerial = true; // serial enable for non-setup serial (SPI) ops
+
         int currentToTia(int currentpA);
         int tiaToCurrent(int currentTIA);
 

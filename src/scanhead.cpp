@@ -60,10 +60,12 @@ ScanHead::ScanHead():
     numCurrentSamples = 0;
 
     // Setting piezo to zero
-    setPiezo(piezo.chX_P, 0);
-    setPiezo(piezo.chX_N, 0);
-    setPiezo(piezo.chY_P, 0);
-    setPiezo(piezo.chY_N, 0);
+    if (enableSerial) {
+        setPiezo(piezo.chX_P, 0);
+        setPiezo(piezo.chX_N, 0);
+        setPiezo(piezo.chY_P, 0);
+        setPiezo(piezo.chY_N, 0);
+    }
 
     // Setting sample piezo
     setPiezo(piezo.samplePad, 37500); // pad to about -0.5V (empirical)
@@ -352,20 +354,23 @@ void ScanHead::sampleCurrent() {
      * \brief takes a single current sample for integration
      */
 
-    digitalWrite(tia.cs, LOW);
-    delayMicroseconds(1);
-    digitalWrite(tia.cs, HIGH);
-    delayMicroseconds(1);
-    digitalWrite(tia.cs, LOW);
-    int16_t receivedVal_high = (int16_t) SPI1.transfer(0xff);
-    int16_t receivedVal_low  = (int16_t) SPI1.transfer(0xff);
-    delayMicroseconds(1);
-    digitalWrite(tia.cs, HIGH);
-    delayMicroseconds(1);
-    digitalWrite(tia.cs, LOW);
-    int receivedVal = receivedVal_high << 8 | receivedVal_low;
+    if (enableSerial) {
+        digitalWrite(tia.cs, LOW);
+        delayMicroseconds(1);
+        digitalWrite(tia.cs, HIGH);
+        delayMicroseconds(1);
+        digitalWrite(tia.cs, LOW);
+        int16_t receivedVal_high = (int16_t) SPI1.transfer(0xff);
+        int16_t receivedVal_low  = (int16_t) SPI1.transfer(0xff);
+        delayMicroseconds(1);
+        digitalWrite(tia.cs, HIGH);
+        delayMicroseconds(1);
+        digitalWrite(tia.cs, LOW);
+        int receivedVal = receivedVal_high << 8 | receivedVal_low;
 
-    currentSum += filter.step( (float) receivedVal);
+        currentSum += filter.step( (float) receivedVal);
+    }
+
     numCurrentSamples += 1;
 }
 
@@ -470,8 +475,8 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool directio
 
     while (xpos != xEnding) {
 
-        //Serial.print("Setting position to:");
-        //Serial.println(xTarget);
+        Serial.print("Setting position to:");
+        Serial.println(xTarget);
 
         int setPositionStatus = 0;
         while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);

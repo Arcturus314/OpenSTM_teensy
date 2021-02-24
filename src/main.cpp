@@ -104,7 +104,7 @@ void setup() {
 
     Serial.println("Scanning +x");
 
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 10000; i++) {
 
         scanStatus = scanhead->scanOneAxis(currents1D, zPos1D, 1000, true, false); // scanning on +x
 
@@ -116,6 +116,8 @@ void setup() {
         }
 
         Serial.println("Dumping forward x-axis scan");
+
+        delay(5000);
 
         //for (int i = 0; i < 1000; i++) {
         //    Serial.print(i);
