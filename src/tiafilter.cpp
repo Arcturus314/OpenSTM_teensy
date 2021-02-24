@@ -2,6 +2,27 @@
 // 60Hz band stop assuming 20kHz sample frequency
 // Generated from http://www.schwietering.com/jayduino/filtuino/index.php?characteristic=ch&passmode=bs&order=2&chebrip=-3&usesr=usesr&sr=20000&frequencyLow=59&noteLow=&frequencyHigh=61&noteHigh=&pw=pw&calctype=float&run=Send
 
+// 8th order butterworth SOS coeffs from Matlab (60dB suppression)
+//
+// >> d.Coefficients
+
+ans =
+
+    0.9999   -1.9994    0.9999    1.0000   -1.9994    0.9998
+    0.9999   -1.9994    0.9999    1.0000   -1.9994    0.9998
+    0.9997   -1.9991    0.9997    1.0000   -1.9991    0.9994
+    0.9997   -1.9991    0.9997    1.0000   -1.9991    0.9994
+
+
+// 4th order butterworth SOS coeffs from Matlab (30dB suppression)
+//
+//>> d.Coefficients
+
+ans =
+
+    0.9998   -1.9992    0.9998    1.0000   -1.9992    0.9996
+    0.9998   -1.9992    0.9998    1.0000   -1.9992    0.9996
+
 class TIAFilter
 {
 	public:
