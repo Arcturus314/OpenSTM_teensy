@@ -117,15 +117,15 @@ void setup() {
 
         Serial.println("Dumping forward x-axis scan");
 
-        delay(5000);
+        //delay(5000);
 
-        //for (int i = 0; i < 1000; i++) {
-        //    Serial.print(i);
-        //    Serial.print(",");
-        //    Serial.print(currents1D[i]);
-        //    Serial.print(",");
-        //    Serial.println(zPos1D[i]);
-        //}
+        for (int i = 0; i < 1000; i++) {
+            Serial.print(i);
+            Serial.print(",");
+            Serial.print(currents1D[i]);
+            Serial.print(",");
+            Serial.println(zPos1D[i]);
+        }
 
         //approachLoop(currentBuffer, zPosBuffer, false); // returning to setpoint
 
