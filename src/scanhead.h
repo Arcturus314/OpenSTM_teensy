@@ -119,7 +119,7 @@ class ScanHead
         //systemsos = signal.iirdesign(wp, ws, gpass, gstop, output='sos')
         //print(systemsos)
 
-        const float tia60hzbiquad[6] = {0.99884837,-1.99734223,0.99884837,1,-1.99772833,0.99808291};
+        const double tia60hzbiquad[6] = {0.99884837,-1.99734223,0.99884837,1,-1.99772833,0.99808291};
 
 };
 

@@ -27,6 +27,7 @@ void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &z
         // move encoder until user selection
         while (ui->encoderVals.next == 0) {
             ui->updateInputs();
+            scanhead->fetchCurrent();
             scanhead->moveStepper(1, ui->encoderVals.encoderPos);
             current.push(scanhead->current);
             zpos.push(scanhead->zpos);
@@ -85,15 +86,14 @@ void setup() {
     CircularBuffer<int,1000> zPosBuffer;
 
     Serial.println("Starting Approach");
-    //approachLoop(currentBuffer, zPosBuffer, true);
+    approachLoop(currentBuffer, zPosBuffer, true);
     Serial.println("Approach Complete. Dumping approach data...");
 
-    //for (int i = 0; i < 1000; i++) {
-    //    Serial.print(currentBuffer.first());
-    //    Serial.print(",");
-    //    Serial.println(zPosBuffer.first());
-    //}
-
+    for (int i = 0; i < 1000; i++) {
+        Serial.print(currentBuffer.first());
+        Serial.print(",");
+        Serial.println(zPosBuffer.first());
+    }
 
     //// 1-D Scan, without height control
 
@@ -104,7 +104,7 @@ void setup() {
 
     Serial.println("Scanning +x");
 
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 10; i++) {
 
         scanStatus = scanhead->scanOneAxis(currents1D, zPos1D, 1000, true, false); // scanning on +x
 

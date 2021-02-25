@@ -7,10 +7,23 @@
 #ifndef biquad_h
 #define biquad_h
 
+#include "Arduino.h"
+
 class Biquad
 {
+
+	private:
+		double a[3];
+        double b[3];
+        double x0;
+        double x1;
+        double y0;
+        double y1;
 	public:
-		Biquad(const float coeffs[6]) {
+        /*!
+         * \brief sets filter coefficients
+         */
+		void setcoeffs(const double *coeffs) {
 
             a[0] = coeffs[0];
             a[1] = coeffs[1];
@@ -24,15 +37,6 @@ class Biquad
             y0 = 0;
             y1 = 0;
 		}
-
-	private:
-		float a[3];
-        float b[3];
-        float x0;
-        float x1;
-        float y0;
-        float y1;
-	public:
         /*!
          * \brief adds an element to the filter and returns the filtered output
          * @param in the input value
@@ -40,14 +44,14 @@ class Biquad
          */
 		float filter(float in)
 		{
-            float result = in*a[0] + x0*a[1] + x1*a[2] - y0*b[1] - y0*b[2];
+            double result = in*a[0] + x0*a[1] + x1*a[2] - y0*b[1] - y0*b[2];
 
             x1 = x0;
             x0 = in;
             y1 = y0;
             y0 = result;
 
-			return result;
+			return (float) result;
 		}
 };
 
