@@ -9,7 +9,8 @@
 
 #include "Arduino.h"
 #include "Stepper.h"
-#include "tiafilter.cpp"
+#include "SPI.h"
+#include "biquad.cpp"
 
 class ScanHead
 {
@@ -40,8 +41,6 @@ class ScanHead
 
     private:
 
-        TIAFilter filter;
-
         const bool enableSerial = true; // serial enable for non-setup serial (SPI) ops
 
         int currentToTia(int currentpA);
@@ -54,8 +53,9 @@ class ScanHead
         int currentSum;
         int numCurrentSamples;
 
-
         float calibratedNoCurrent = 0; // This is re-measured when the STM boots.
+
+        Biquad tiafilter;
 
         Stepper stepper0;
         Stepper stepper1;
@@ -106,6 +106,21 @@ class ScanHead
         const int overCurrent = 20000; // 20nA, corresponding to 2/3 of TIA FSD
 
         // const float calibratedNoCurrent = 3532.6; // no-current TIA reading, empirical. Note - stdev of 49, 750 samples
+
+        // Coefficients for 60Hz band-stop filter implemented with a second order Butterworth filter. Coefficients
+        // generated through python script:
+        //
+        //# with 20khz sample rate, 1 is 10khz
+        //# we want to cut out 59hz to 61hz
+        //wp = [0.0058, 0.0062]
+        //ws = [0.0059, 0.0061]
+        //gpass = 1
+        //gstop = 20
+        //systemsos = signal.iirdesign(wp, ws, gpass, gstop, output='sos')
+        //print(systemsos)
+
+        const float tia60hzbiquad[6] = {0.99884837,-1.99734223,0.99884837,1,-1.99772833,0.99808291};
+
 };
 
 #endif
