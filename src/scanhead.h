@@ -10,6 +10,7 @@
 #include "Arduino.h"
 #include "Stepper.h"
 #include "SPI.h"
+#include <CircularBuffer.h>
 #include "biquad.cpp"
 
 class ScanHead
@@ -18,6 +19,7 @@ class ScanHead
         ScanHead();
 
         int current;
+        int currentRaw;
 
         // Current status of the scan head
         // 0: approach step
@@ -32,7 +34,7 @@ class ScanHead
         int zposStepper;
         int setPositionStep(int xpos_set, int ypos_set, int zcurr_set);
         void moveStepper(int steps, int stepRate);
-        int autoApproachStep(int zcurr_set);
+        int autoApproachStep(int zcurr_set, CircularBuffer<int,1000> &currentBuf, CircularBuffer<int,1000> &zposBuf);
         int fetchCurrent();
         void calibrateZeroCurrent();
         void sampleCurrent();
@@ -51,6 +53,7 @@ class ScanHead
         int setpoint; // current setpoint
 
         int currentSum;
+        int currentSumRaw;
         int numCurrentSamples;
 
         float calibratedNoCurrent = 0; // This is re-measured when the STM boots.
@@ -94,13 +97,29 @@ class ScanHead
             static const int D = 24;
         } stepper2_pins;
 
-        const int   pidTransverseP = 1; // gain term in PID control for transverse axes
-        const int   pidZP = 1; // gain term in PID control for Z axis
         const int   maxPiezo = 65535; // maximum valuable attainable by a single piezo channel
         const int   minPiezo = 0; // minimum valuable attainable by a single piezo channel
 
+        const int   pidTransverseP = 1; // gain term in PID control for transverse axes
+        const int   pidZP = 1; // gain term in PID control for Z axis
+        const int   pidTransverseI = 0; // Integral term in PID control for transverse axes
+        const int   pidZI = 0;  // Integral term in PID control for Z axis
+        const int   pidTransverseD = 0; // Derivative term in PID control for transverse axes
+        const int   pidZD = 0; // Derivative term in PID control for Z axis
+
+
         const int maxTransverseStep = 100; // largest one-cycle piezo step on the x-axis
         const int maxZStep = 100;
+
+        // PID internal use
+
+        int xIntErr = 0;
+        int yIntErr = 0;
+        int zIntErr = 0;
+
+        int xPrevErr = 0;
+        int yPrevErr = 0;
+        int zPrevErr = 0;
 
         const int currentSet = 300;    // 0.3nA
         const int overCurrent = 20000; // 20nA, corresponding to 2/3 of TIA FSD

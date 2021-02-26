@@ -105,13 +105,35 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
      * - centered around zero - so negative voltage applied for < 2^16/2, positive for > 2^16/2, ~0 = 2^16/2
      */
 
-    // really shitty p-control
+
+    // TODO: should be floating point
 
     status = 0;
 
-    int xStepIncrement = (xpos_set-xpos)*pidTransverseP;
-    int yStepIncrement = (ypos_set-ypos)*pidTransverseP;
-    int zStepIncrement = 0;
+    current = fetchCurrent();
+
+    int xerr = xpos_set-xpos;
+    int yerr = ypos_set-ypos;
+    int zerr = zcurr_set-currentRaw;
+
+    int xDerErr = xerr-xPrevErr;
+    int yDerErr = yerr-yPrevErr;
+    int zDerErr = zerr-zPrevErr;
+
+    xIntErr += xerr;
+    yIntErr += yerr;
+    zIntErr += zerr;
+
+    xPrevErr = xerr;
+    yPrevErr = yerr;
+    zPrevErr = zerr;
+
+    int xStepIncrement = xerr*pidTransverseP + xIntErr*pidTransverseI + xDerErr*pidTransverseD;
+    int yStepIncrement = yerr*pidTransverseP + yIntErr*pidTransverseI + yDerErr*pidTransverseD;
+    int zStepIncrement = zerr*pidZP + zIntErr*pidZI + zDerErr*PIDZD;
+
+    if (zcurr_set == -1) zStepIncrement = 0;
+    else if (zcurr_set == -2) zStepIncrement = -1 * maxZStep;
 
     //Serial.println("IN SETPOSITIONSTEP");
 
@@ -132,13 +154,6 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
 
     //Serial.println("fetching current");
 
-    current = fetchCurrent();
-
-
-    if (zcurr_set == -1) zStepIncrement = 0;
-    else if (zcurr_set == -2) zStepIncrement = -1 * maxZStep;
-    else zStepIncrement = (zcurr_set-current)*pidZP;
-
     //Serial.print("zcurr_set ");
     //Serial.print(zcurr_set);
     //Serial.print(" current ");
@@ -146,12 +161,12 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     //Serial.print(" zStepIncrement ");
 
     // checking for overcurrent. If overcurrent, retract and return
-    //
-    if (current > overCurrent) {
-        status = 3;
-        moveStepper(-50, 4096);
-        return -2;
-    }
+    // TODO: uncomment
+    //if (current > overCurrent) {
+    //    status = 3;
+    //    moveStepper(-50, 4096);
+    //    return -2;
+    //}
 
     // checking step size, setting step to max size if necessary
 
@@ -177,10 +192,10 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     //Serial.println(zpos);
 
 
-    int chX_P = maxPiezo/2 + -zpos + xpos;
-    int chX_N = maxPiezo/2 + -zpos - xpos;
-    int chY_P = maxPiezo/2 + -zpos + ypos;
-    int chY_N = maxPiezo/2 + -zpos - ypos;
+    int chX_P = maxPiezo/2 - zpos + xpos;
+    int chX_N = maxPiezo/2 - zpos - xpos;
+    int chY_P = maxPiezo/2 - zpos + ypos;
+    int chY_N = maxPiezo/2 - zpos - ypos;
 
     //Serial.print("chX_P ");
     //Serial.println(chX_P);
@@ -309,7 +324,7 @@ void ScanHead::moveStepper(int steps, int stepRate) {
 
 }
 
-int ScanHead::autoApproachStep(int zcurr_set) {
+int ScanHead::autoApproachStep(int zcurr_set, CircularBuffer<int,1000> &currentBuf, CircularBuffer<int,1000> &zposBuf) {
     /*!
      * \brief Automatically advances Z until surface is detected. Performs one 'step' iteration. Ensure z-position is zeroed before approach
      * @return 0 if surface not yet detected, 1 otherwise
@@ -335,6 +350,8 @@ int ScanHead::autoApproachStep(int zcurr_set) {
     while (approachStatus == 0 or approachStatus == 1) {
         //Serial.println("loop step");
         approachStatus = setPositionStep(0,0,zcurr_set);
+        currentBuf.push(currentRaw);
+        zposBuf.push(zpos);
         //if (approachStatus != 0 and approachStatus != 1) {
         //    Serial.print("could not approach, returned status ");
         //    Serial.println(approachStatus);
@@ -370,7 +387,7 @@ void ScanHead::sampleCurrent() {
         int receivedVal = receivedVal_high << 8 | receivedVal_low;
 
         currentSum += (int) tiafilter.filter( (float) receivedVal);
-        //currentSum += receivedVal;
+        currentSumRaw += receivedVal;
     }
 
     numCurrentSamples += 1;
@@ -385,13 +402,17 @@ int ScanHead::fetchCurrent() {
 
 
     current = tiaToCurrent(currentSum / numCurrentSamples);
+    currentRaw = tiaToCurrent(currentSumRaw / numCurrentSamples);
+    //Serial.print("raw current ");
+    //Serial.println(tiaToCurrent(currentSumRaw / numCurrentSamples));
 
-    Serial.print("Num samples ");
-    Serial.println(numCurrentSamples);
-    Serial.print("Calc current ");
-    Serial.println(current);
+    //Serial.print("Num samples ");
+    //Serial.println(numCurrentSamples);
+    //Serial.print("Calc current ");
+    //Serial.println(current);
 
     currentSum = 0;
+    currentSumRaw = 0;
     numCurrentSamples = 0;
 
     return current; // might bias results to lower val due to rounding err, but we're ok with this
@@ -475,13 +496,20 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool directio
     Serial.print("End:");
     Serial.println(xEnding);
 
-    while (xpos != xEnding) {
+    int currentBuf[size];
 
-        Serial.print("Setting position to:");
-        Serial.println(xTarget);
+    elapsedMicros testStart;
+
+    //while (xpos != xEnding) {
+    while(numSteps < size) {
+
+        //Serial.print("Setting position to:");
+        //Serial.println(xTarget);
 
         int setPositionStatus = 0;
-        while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
+        //while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
+        while (setPositionStatus == 0) setPositionStatus = setPositionStep(xStarting, ypos, setCurrent);
+        currentBuf[numSteps] = current;
 
         //Serial.print("status:");
         //Serial.println(setPositionStatus);
@@ -489,14 +517,26 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool directio
         //Serial.print("zpos:");
         //Serial.println(zpos);
 
-        currentArr[numSteps] = current;
+        currentArr[numSteps] = currentRaw;
         zposArr[numSteps] = zpos;
 
-        if (setPositionStatus != 1) return setPositionStatus;
+        if (setPositionStatus != 1) {
+            for (int i = 0; i < numSteps; i++) {
+                Serial.println(currentBuf[i]);
+            }
+            return setPositionStatus;
+        }
 
         if (direction) xTarget += 1;
         else xTarget -= 1;
         numSteps += 1;
+    }
+
+    Serial.print("time");
+    Serial.println(testStart);
+
+    for (int i = 0; i < numSteps; i++) {
+        Serial.println(currentBuf[i]);
     }
 
     return 0;
