@@ -100,12 +100,12 @@ class ScanHead
         const int   maxPiezo = 65535; // maximum valuable attainable by a single piezo channel
         const int   minPiezo = 0; // minimum valuable attainable by a single piezo channel
 
-        const int   pidTransverseP = 1; // gain term in PID control for transverse axes
-        const int   pidZP = 1; // gain term in PID control for Z axis
-        const int   pidTransverseI = 0; // Integral term in PID control for transverse axes
-        const int   pidZI = 0;  // Integral term in PID control for Z axis
-        const int   pidTransverseD = 0; // Derivative term in PID control for transverse axes
-        const int   pidZD = 0; // Derivative term in PID control for Z axis
+        const float pidTransverseP = 1; // gain term in PID control for transverse axes
+        const float pidZP = 1; // gain term in PID control for Z axis
+        const float pidTransverseI = 0; // Integral term in PID control for transverse axes
+        const float pidZI = 0;  // Integral term in PID control for Z axis
+        const float pidTransverseD = 0; // Derivative term in PID control for transverse axes
+        const float pidZD = 0; // Derivative term in PID control for Z axis
 
 
         const int maxTransverseStep = 100; // largest one-cycle piezo step on the x-axis
@@ -113,13 +113,13 @@ class ScanHead
 
         // PID internal use
 
-        int xIntErr = 0;
-        int yIntErr = 0;
-        int zIntErr = 0;
+        float xIntErr = 0;
+        float yIntErr = 0;
+        float zIntErr = 0;
 
-        int xPrevErr = 0;
-        int yPrevErr = 0;
-        int zPrevErr = 0;
+        float xPrevErr = 0;
+        float yPrevErr = 0;
+        float zPrevErr = 0;
 
         const int currentSet = 300;    // 0.3nA
         const int overCurrent = 20000; // 20nA, corresponding to 2/3 of TIA FSD

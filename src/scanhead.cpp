@@ -112,13 +112,13 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
 
     current = fetchCurrent();
 
-    int xerr = xpos_set-xpos;
-    int yerr = ypos_set-ypos;
-    int zerr = zcurr_set-currentRaw;
+    float  xerr = (float) xpos_set-xpos;
+    float  yerr = (float) ypos_set-ypos;
+    float  zerr = (float) zcurr_set-currentRaw;
 
-    int xDerErr = xerr-xPrevErr;
-    int yDerErr = yerr-yPrevErr;
-    int zDerErr = zerr-zPrevErr;
+    float xDerErr = xerr-xPrevErr;
+    float yDerErr = yerr-yPrevErr;
+    float zDerErr = zerr-zPrevErr;
 
     xIntErr += xerr;
     yIntErr += yerr;
@@ -128,9 +128,9 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     yPrevErr = yerr;
     zPrevErr = zerr;
 
-    int xStepIncrement = xerr*pidTransverseP + xIntErr*pidTransverseI + xDerErr*pidTransverseD;
-    int yStepIncrement = yerr*pidTransverseP + yIntErr*pidTransverseI + yDerErr*pidTransverseD;
-    int zStepIncrement = zerr*pidZP + zIntErr*pidZI + zDerErr*PIDZD;
+    int xStepIncrement = (int) (xerr*pidTransverseP + xIntErr*pidTransverseI + xDerErr*pidTransverseD);
+    int yStepIncrement = (int) (yerr*pidTransverseP + yIntErr*pidTransverseI + yDerErr*pidTransverseD);
+    int zStepIncrement = (int) (zerr*pidZP + zIntErr*pidZI + zDerErr*PIDZD);
 
     if (zcurr_set == -1) zStepIncrement = 0;
     else if (zcurr_set == -2) zStepIncrement = -1 * maxZStep;
