@@ -91,27 +91,27 @@ void setup() {
     approachLoop(currentBuffer, zPosBuffer, true);
     Serial.print("found current ");
     Serial.println(scanhead->current);
-    Serial.println("Approach Complete. Dumping approach data...");
-
-
-    for (int i = 0; i < 1000; i++) {
-        Serial.print(currentBuffer.shift());
-        Serial.print(",");
-        Serial.println(zPosBuffer.shift());
-    }
+    Serial.println("Approach complete");
 
     //// 1-D Scan, without height control
 
-    int currents1D[1000];
-    int zPos1D[1000];
+
+    int numpoints = 500;
+    int step = 1;
+
+    int currents1Df[numpoints/step];
+    int zPos1Df[numpoints/step];
+    int currents1Db[numpoints/step];
+    int zPos1Db[numpoints/step];
 
     int scanStatus;
+
 
     Serial.println("Scanning +x");
 
     for (int i = 0; i < 1; i++) {
 
-        scanStatus = scanhead->scanOneAxis(currents1D, zPos1D, 1000, true, false); // scanning on +x
+        scanStatus = scanhead->scanOneAxis(currents1Df, zPos1Df, numpoints, step, true, true); // scanning on +x
 
 
         ui -> drawDisplay(scanhead);
@@ -119,25 +119,13 @@ void setup() {
         if (scanStatus != 0) {
             Serial.print("Encountered scan error ");
             Serial.println(scanStatus);
-        }
-
-        Serial.println("Dumping forward x-axis scan");
-
-        //delay(5000);
-
-        for (int i = 0; i < 1000; i++) {
-            Serial.print(i);
-            Serial.print(",");
-            Serial.print(currents1D[i]);
-            Serial.print(",");
-            Serial.println(zPos1D[i]);
         }
 
         //approachLoop(currentBuffer, zPosBuffer, false); // returning to setpoint
 
         Serial.println("Scanning -x");
 
-        scanStatus = scanhead->scanOneAxis(currents1D, zPos1D, 1000, false, false); // scanning on -x
+        scanStatus = scanhead->scanOneAxis(currents1Db, zPos1Db, numpoints, step, false, true); // scanning on -x
 
         ui -> drawDisplay(scanhead);
 
@@ -146,14 +134,35 @@ void setup() {
             Serial.println(scanStatus);
         }
 
+        Serial.println("Dumping approach data...");
+
+
+        for (int j = 0; j < 1000; j++) {
+            Serial.print(currentBuffer.shift());
+            Serial.print(",");
+            Serial.println(zPosBuffer.shift());
+        }
+
+        Serial.println("Dumping forward x-axis scan");
+
+        //delay(5000);
+
+        for (int j = 0; j < numpoints/step; j++) {
+                Serial.print(j);
+                Serial.print(",");
+                Serial.print(currents1Df[j]);
+                Serial.print(",");
+                Serial.println(zPos1Df[j]);
+        }
+
         Serial.println("Dumping backward x-axis scan");
 
-        for (int i = 0; i < 1000; i++) {
-            Serial.print(i);
-            Serial.print(",");
-            Serial.print(currents1D[i]);
-            Serial.print(",");
-            Serial.println(zPos1D[i]);
+        for (int j = 0; j < numpoints/step; j++) {
+                Serial.print(j);
+                Serial.print(",");
+                Serial.print(currents1Db[j]);
+                Serial.print(",");
+                Serial.println(zPos1Db[j]);
         }
 
         for (int step = 0; step < 50; step++) scanhead->moveStepper(1, -10);

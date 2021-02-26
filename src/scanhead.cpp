@@ -130,7 +130,7 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
 
     int xStepIncrement = (int) (xerr*pidTransverseP + xIntErr*pidTransverseI + xDerErr*pidTransverseD);
     int yStepIncrement = (int) (yerr*pidTransverseP + yIntErr*pidTransverseI + yDerErr*pidTransverseD);
-    int zStepIncrement = (int) (zerr*pidZP + zIntErr*pidZI + zDerErr*PIDZD);
+    int zStepIncrement = (int) (zerr*pidZP + zIntErr*pidZI + zDerErr*pidZD);
 
     if (zcurr_set == -1) zStepIncrement = 0;
     else if (zcurr_set == -2) zStepIncrement = -1 * maxZStep;
@@ -362,8 +362,6 @@ int ScanHead::autoApproachStep(int zcurr_set, CircularBuffer<int,1000> &currentB
         }
     }
 
-    // current problem - seem to start from 0,0,0, then we index down, then things break. We want to fully retract, then extrude for each step. Right now, there's no way to retract! cuz its dumb
-
     return 0;
 }
 
@@ -388,9 +386,11 @@ void ScanHead::sampleCurrent() {
 
         currentSum += (int) tiafilter.filter( (float) receivedVal);
         currentSumRaw += receivedVal;
+        currentLogSum += receivedVal; // TODO: change to something with 60Hz filtering
     }
 
     numCurrentSamples += 1;
+    numCurrentLogSamples += 1;
 }
 
 int ScanHead::fetchCurrent() {
@@ -416,6 +416,22 @@ int ScanHead::fetchCurrent() {
     numCurrentSamples = 0;
 
     return current; // might bias results to lower val due to rounding err, but we're ok with this
+
+}
+
+int ScanHead::fetchCurrentLog() {
+    /*!
+     * \brief calculates current from integration since last fetchCurrentLog call, returns value
+     * \detail to provide maximum integration time, call this as infrequently as possible
+     * @return current in pA
+     */
+
+    int currentLog = tiaToCurrent(currentLogSum / numCurrentLogSamples);
+
+    currentLogSum = 0;
+    numCurrentLogSamples = 0;
+
+    return currentLog; // might bias results to lower val due to rounding err, but we're ok with this
 
 }
 
@@ -467,7 +483,7 @@ void ScanHead::setPiezo(int channel, int value) {
 
 }
 
-int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool direction, bool heightControl) {
+int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, int step, bool direction, bool heightControl) {
     /*!
      * \brief scans size piezo LSBs across X axis with optional height control. Writes z positions and currents to arrays
      * @param *currents Pointer to size long array to store currents
@@ -476,8 +492,6 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool directio
      * @param direction true to scan in +x, false to scan in -x
      * @param heightControl true if height control enabled, false otherwise
      */
-
-    xpos = 0;
 
     int xStarting = xpos;
     int xEnding   = xpos-size;
@@ -507,9 +521,9 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool directio
         //Serial.println(xTarget);
 
         int setPositionStatus = 0;
-        //while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
-        while (setPositionStatus == 0) setPositionStatus = setPositionStep(xStarting, ypos, setCurrent);
-        currentBuf[numSteps] = current;
+        while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
+        //while (setPositionStatus == 0) setPositionStatus = setPositionStep(xStarting, ypos, setCurrent); TODO: ???
+        //currentBuf[numSteps] = current;
 
         //Serial.print("status:");
         //Serial.println(setPositionStatus);
@@ -517,13 +531,19 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool directio
         //Serial.print("zpos:");
         //Serial.println(zpos);
 
-        currentArr[numSteps] = currentRaw;
-        zposArr[numSteps] = zpos;
+        if (numSteps % step == 0) {
+            Serial.print("@");
+            Serial.println(xTarget);
+            currentArr[numSteps/step] = fetchCurrentLog();
+            zposArr[numSteps/step] = zpos;
+        }
 
-        if (setPositionStatus != 1) {
-            for (int i = 0; i < numSteps; i++) {
-                Serial.println(currentBuf[i]);
-            }
+       if (setPositionStatus != 1) {
+        //    for (int i = 0; i < numSteps; i++) {
+        //        Serial.println(currentBuf[i]);
+        //    }
+            Serial.println("Scan failed with error");
+            Serial.println(setPositionStatus);
             return setPositionStatus;
         }
 
@@ -532,12 +552,12 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, bool directio
         numSteps += 1;
     }
 
-    Serial.print("time");
-    Serial.println(testStart);
+    //Serial.print("time");
+    //Serial.println(testStart);
 
-    for (int i = 0; i < numSteps; i++) {
-        Serial.println(currentBuf[i]);
-    }
+    //for (int i = 0; i < numSteps; i++) {
+    //    Serial.println(currentBuf[i]);
+    //}
 
     return 0;
 

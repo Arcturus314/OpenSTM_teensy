@@ -36,9 +36,10 @@ class ScanHead
         void moveStepper(int steps, int stepRate);
         int autoApproachStep(int zcurr_set, CircularBuffer<int,1000> &currentBuf, CircularBuffer<int,1000> &zposBuf);
         int fetchCurrent();
+        int fetchCurrentLog();
         void calibrateZeroCurrent();
         void sampleCurrent();
-        int scanOneAxis(int *currents, int *zpos, int size, bool direction, bool heightcontrol);
+        int scanOneAxis(int *currents, int *zpos, int size, int step, bool direction, bool heightcontrol);
         void testScanHeadPosition(int numsteps, int stepsize);
 
     private:
@@ -55,6 +56,9 @@ class ScanHead
         int currentSum;
         int currentSumRaw;
         int numCurrentSamples;
+
+        int currentLogSum;
+        int numCurrentLogSamples;
 
         float calibratedNoCurrent = 0; // This is re-measured when the STM boots.
 
@@ -100,12 +104,12 @@ class ScanHead
         const int   maxPiezo = 65535; // maximum valuable attainable by a single piezo channel
         const int   minPiezo = 0; // minimum valuable attainable by a single piezo channel
 
-        const float pidTransverseP = 1; // gain term in PID control for transverse axes
-        const float pidZP = 1; // gain term in PID control for Z axis
-        const float pidTransverseI = 0; // Integral term in PID control for transverse axes
-        const float pidZI = 0;  // Integral term in PID control for Z axis
-        const float pidTransverseD = 0; // Derivative term in PID control for transverse axes
-        const float pidZD = 0; // Derivative term in PID control for Z axis
+        const float pidTransverseP = 0.5; // gain term in PID control for transverse axes
+        const float pidZP = 0.5; // gain term in PID control for Z axis
+        const float pidTransverseI = 0.1; // Integral term in PID control for transverse axes
+        const float pidZI = 0.00;  // Integral term in PID control for Z axis
+        const float pidTransverseD = 0.1; // Derivative term in PID control for transverse axes
+        const float pidZD = 0.00; // Derivative term in PID control for Z axis
 
 
         const int maxTransverseStep = 100; // largest one-cycle piezo step on the x-axis
