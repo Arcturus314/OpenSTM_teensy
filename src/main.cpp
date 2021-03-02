@@ -54,45 +54,7 @@ void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &z
     for (int i = 0; i < 1000; i++) scanhead -> setPositionStep(0,0,setpoint);
 }
 
-void sampleScanHeadCurrent() {
-    scanhead->sampleCurrent();
-}
-
-void setup() {
-    // Initial Setup
-    Serial.begin(9600);
-    delay(1000); // todo: remove
-    Serial.println("OpenSTM V0.1 Startup...");
-
-    Serial.println("Initializing ScanHead");
-
-    scanhead = new ScanHead();
-    // setting up interrupt for current integration
-    currentSampleTimer.begin(sampleScanHeadCurrent, 50); // sampling every 50us -> 20kHz
-
-    Serial.println("Initializing UI");
-
-    ui = new UI();
-
-    Serial.println("Calibrating Zero Current");
-    scanhead->calibrateZeroCurrent();
-
-    Serial.println("Startup Complete");
-
-    ui->drawDisplay(scanhead);
-    ui->updateInputs();
-
-    // Initial Approach
-
-    CircularBuffer<int,1000> currentBuffer;
-    CircularBuffer<int,1000> zPosBuffer;
-
-    Serial.println("Starting Approach");
-    approachLoop(currentBuffer, zPosBuffer, true);
-    Serial.print("found current ");
-    Serial.println(scanhead->current);
-    Serial.println("Approach complete");
-
+void scan1D() {
     //// 1-D Scan, without height control
 
 
@@ -134,14 +96,6 @@ void setup() {
             Serial.println(scanStatus);
         }
 
-        Serial.println("Dumping approach data...");
-
-
-        for (int j = 0; j < 1000; j++) {
-            Serial.print(currentBuffer.shift());
-            Serial.print(",");
-            Serial.println(zPosBuffer.shift());
-        }
 
         Serial.println("Dumping forward x-axis scan");
 
@@ -165,10 +119,99 @@ void setup() {
                 Serial.println(zPos1Db[j]);
         }
 
-        for (int step = 0; step < 50; step++) scanhead->moveStepper(1, -10);
+        Serial.println("Returning");
+    }
+}
+
+void scan2D() {
+    Serial.println("scanning in 2D");
+
+    int sizeX = 100;
+    int sizeY = 100;
+    int step = 10;
+
+    int numSteps = (sizeX * sizeY) / (step * step);
+
+    int currentArr[numSteps];
+    int xposArr[numSteps];
+    int yposArr[numSteps];
+    int zposArr[numSteps];
+
+    int scanStatus = scanhead->scanTwoAxes(currentArr, zposArr, xposArr, yposArr, sizeX, sizeY, step, true);
+
+    Serial.print("Finished scan, returned with code ");
+    Serial.println(scanStatus);
+
+    if (scanStatus != 0) return;
+
+    Serial.println("Dumping scan output:");
+    Serial.println("step,x,y,z,current");
+
+    for (int step = 0; step < numSteps; step++) {
+        Serial.print(step);
+        Serial.print(",");
+        Serial.print(xposArr[step]);
+        Serial.print(",");
+        Serial.print(yposArr[step]);
+        Serial.print(",");
+        Serial.print(zposArr[step]);
+        Serial.print(",");
+        Serial.println(currentArr[step]);
     }
 
-    //approachLoop(currentBuffer, zPosBuffer); // returning to setpoint
+}
+
+void sampleScanHeadCurrent() {
+    scanhead->sampleCurrent();
+}
+
+void setup() {
+    // Initial Setup
+    Serial.begin(9600);
+    delay(1000); // todo: remove
+    Serial.println("OpenSTM V0.1 Startup...");
+
+    Serial.println("Initializing ScanHead");
+
+    scanhead = new ScanHead();
+    // setting up interrupt for current integration
+    currentSampleTimer.begin(sampleScanHeadCurrent, 50); // sampling every 50us -> 20kHz
+
+    Serial.println("Initializing UI");
+
+    ui = new UI();
+
+    Serial.println("Calibrating Zero Current");
+    scanhead->calibrateZeroCurrent();
+
+    Serial.println("Startup Complete");
+
+    ui->drawDisplay(scanhead);
+    ui->updateInputs();
+
+    // Initial Approach
+
+    CircularBuffer<int,1000> currentBuffer;
+    CircularBuffer<int,1000> zPosBuffer;
+
+    Serial.println("Starting Approach");
+    approachLoop(currentBuffer, zPosBuffer, true);
+    Serial.print("found current ");
+    Serial.println(scanhead->current);
+    Serial.println("Approach complete");
+
+    Serial.println("Dumping approach data...");
+
+
+    for (int j = 0; j < 1000; j++) {
+        Serial.print(currentBuffer.shift());
+        Serial.print(",");
+        Serial.println(zPosBuffer.shift());
+    }
+
+    scan1D();
+    //scan2D();
+    for (int step = 0; step < 50; step++) scanhead->moveStepper(1, -10);
 
 }
 

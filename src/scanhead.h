@@ -39,7 +39,8 @@ class ScanHead
         int fetchCurrentLog();
         void calibrateZeroCurrent();
         void sampleCurrent();
-        int scanOneAxis(int *currents, int *zpos, int size, int step, bool direction, bool heightcontrol);
+        int scanTwoAxes(int *currentArr, int *zposArr, int *xposArr, int *yposArr, int sizeX, int sizeY, bool heightcontrol);
+        int scanOneAxis(int *currentArr, int *zposArr, int size, int step, bool direction, bool heightcontrol);
         void testScanHeadPosition(int numsteps, int stepsize);
 
     private:
@@ -104,12 +105,12 @@ class ScanHead
         const int   maxPiezo = 65535; // maximum valuable attainable by a single piezo channel
         const int   minPiezo = 0; // minimum valuable attainable by a single piezo channel
 
-        const float pidTransverseP = 0.5; // gain term in PID control for transverse axes
+        const float pidTransverseP = 1; // gain term in PID control for transverse axes
         const float pidZP = 0.5; // gain term in PID control for Z axis
-        const float pidTransverseI = 0.1; // Integral term in PID control for transverse axes
-        const float pidZI = 0.00;  // Integral term in PID control for Z axis
-        const float pidTransverseD = 0.1; // Derivative term in PID control for transverse axes
-        const float pidZD = 0.00; // Derivative term in PID control for Z axis
+        const float pidTransverseI = 0.0; // Integral term in PID control for transverse axes
+        const float pidZI = 0.0;  // Integral term in PID control for Z axis
+        const float pidTransverseD = 0.0; // Derivative term in PID control for transverse axes
+        const float pidZD = 0.0; // Derivative term in PID control for Z axis
 
 
         const int maxTransverseStep = 100; // largest one-cycle piezo step on the x-axis

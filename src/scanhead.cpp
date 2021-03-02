@@ -105,8 +105,7 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
      * - centered around zero - so negative voltage applied for < 2^16/2, positive for > 2^16/2, ~0 = 2^16/2
      */
 
-
-    // TODO: should be floating point
+    //Serial.println("IN SETPOSITIONSTEP");
 
     status = 0;
 
@@ -132,10 +131,20 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     int yStepIncrement = (int) (yerr*pidTransverseP + yIntErr*pidTransverseI + yDerErr*pidTransverseD);
     int zStepIncrement = (int) (zerr*pidZP + zIntErr*pidZI + zDerErr*pidZD);
 
+    //Serial.print("  zerr:");
+    //Serial.println(zerr);
+    //Serial.print("  zIntErr");
+    //Serial.println(zIntErr);
+    //Serial.print("  zDerErr");
+    //Serial.println(zDerErr);
+    //Serial.print(" xi:");
+    //Serial.print(xStepIncrement);
+    //Serial.print(" zi:");
+    //Serial.println(zStepIncrement);
+
     if (zcurr_set == -1) zStepIncrement = 0;
     else if (zcurr_set == -2) zStepIncrement = -1 * maxZStep;
 
-    //Serial.println("IN SETPOSITIONSTEP");
 
     //Serial.print("xpos ");
     //Serial.print(xpos);
@@ -147,18 +156,6 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     //Serial.print(" ypos set ");
     //Serial.println(ypos_set);
 
-    //Serial.print("xStepIncrement ");
-    //Serial.println(xStepIncrement);
-    //Serial.print("yStepIncrement ");
-    //Serial.println(xStepIncrement);
-
-    //Serial.println("fetching current");
-
-    //Serial.print("zcurr_set ");
-    //Serial.print(zcurr_set);
-    //Serial.print(" current ");
-    //Serial.print(current);
-    //Serial.print(" zStepIncrement ");
 
     // checking for overcurrent. If overcurrent, retract and return
     // TODO: uncomment
@@ -172,7 +169,19 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
 
     if (abs(xStepIncrement) > maxTransverseStep) xStepIncrement = maxTransverseStep * (xStepIncrement/abs(xStepIncrement));
     if (abs(yStepIncrement) > maxTransverseStep) yStepIncrement = maxTransverseStep * (yStepIncrement/abs(yStepIncrement));
-    if (abs(zStepIncrement) > maxTransverseStep) zStepIncrement = maxZStep * (zStepIncrement/abs(zStepIncrement));
+    if (abs(zStepIncrement) > maxZStep) zStepIncrement = maxZStep * (zStepIncrement/abs(zStepIncrement));
+
+    //Serial.print("xStepIncrement ");
+    //Serial.println(xStepIncrement);
+    //Serial.print("yStepIncrement ");
+    //Serial.println(xStepIncrement);
+
+    //Serial.print("zcurr_set ");
+    //Serial.print(zcurr_set);
+    //Serial.print(" current ");
+    //Serial.print(current);
+    //Serial.print(" zStepIncrement ");
+    //Serial.println(zStepIncrement);
 
     // applying step
 
@@ -256,7 +265,7 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
     delay(1);
 
     if (exceeded_bounds == true) {
-        //Serial.println("exceeded bounds!");
+        Serial.println("exceeded bounds!");
         return -1;
     }
     else if (xpos == xpos_set && ypos == ypos_set) {
@@ -509,6 +518,8 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, int step, boo
     Serial.println(xStarting);
     Serial.print("End:");
     Serial.println(xEnding);
+    Serial.print("Step:");
+    Serial.println(step);
 
     int currentBuf[size];
 
@@ -517,11 +528,14 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, int step, boo
     //while (xpos != xEnding) {
     while(numSteps < size) {
 
-        //Serial.print("Setting position to:");
-        //Serial.println(xTarget);
 
         int setPositionStatus = 0;
-        while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
+        while (setPositionStatus == 0) {
+            //Serial.print("Setting position to:");
+            //Serial.println(xTarget);
+            setPositionStatus = setPositionStep(xTarget, ypos, setCurrent);
+            //Serial.println(setPositionStatus);
+        }
         //while (setPositionStatus == 0) setPositionStatus = setPositionStep(xStarting, ypos, setCurrent); TODO: ???
         //currentBuf[numSteps] = current;
 
@@ -550,6 +564,116 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, int step, boo
         if (direction) xTarget += 1;
         else xTarget -= 1;
         numSteps += 1;
+    }
+
+    //Serial.print("time");
+    //Serial.println(testStart);
+
+    //for (int i = 0; i < numSteps; i++) {
+    //    Serial.println(currentBuf[i]);
+    //}
+
+    return 0;
+
+}
+
+int ScanHead::scanTwoAxes(int *currentArr, int *zposArr, int *xposArr, int *yposArr, int sizeX, int sizeY, int step, bool heightControl) {
+    /*!
+     * \brief two dimensional scan across sizeX and sizeY. Scans over X preferentially. Writes z positions and currents to arrays
+     * @param *currentArr: Pointer to sizeX*sizeY long array to store currents
+     * @param *zposArr: Pointer to sizeX*sizeY long array to store z positions
+     * @param sizeX number of piezo LSBs to scan over in X
+     * @param sizeY number of piezo LSBs to scan over in y
+     * @param heightControl true if height control enabled, false otherwise
+     */
+
+    int xStart = xpos;
+    int yStart = ypos;
+
+    int xEnd = xStart + sizeX;
+    int yEnd = yStart + sizeY;
+
+    int numStepsExpected = (sizeX * sizeY)/(step*step);
+
+    int setCurrent = setpoint;
+    if (!heightControl) setCurrent = -1; // no height control if -1 passed to setPositionStep
+
+    int numSteps = 0;
+
+    Serial.println("scanning x-axis,y-axis");
+    Serial.print("Start:");
+    Serial.print(xStart);
+    Serial.print(",");
+    Serial.println(yStart);
+    Serial.print("End:");
+    Serial.print(xEnd);
+    Serial.print(",");
+    Serial.println(yEnd);
+
+    bool direction = true;
+
+    for (int yTarget = yStart; yTarget < yEnd; yTarget += step) {
+
+        if (direction) {
+
+            for (int xTarget = xStart; xTarget < xEnd; xTarget += step) {
+                Serial.print(xTarget);
+                Serial.print("|");
+                Serial.println(yTarget);
+                int setPositionStatus = 0;
+                while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, yTarget, setCurrent);
+
+                if (setPositionStatus != 1) {
+                    Serial.println("Scan failed with error");
+                    Serial.println(setPositionStatus);
+                    return setPositionStatus;
+                }
+
+                currentArr[numSteps] = fetchCurrentLog();
+                zposArr[numSteps] = zpos;
+                xposArr[numSteps] = xpos;
+                yposArr[numSteps] = ypos;
+
+                numSteps += 1;
+            }
+        }
+
+        else {
+
+            for (int xTarget = xEnd; xTarget > xStart; xTarget -= step) {
+                Serial.print(xTarget);
+                Serial.print("|");
+                Serial.println(yTarget);
+                int setPositionStatus = 0;
+                while (setPositionStatus == 0) setPositionStatus = setPositionStep(xTarget, yTarget, setCurrent);
+
+                if (setPositionStatus != 1) {
+                    Serial.println("Scan failed with error");
+                    Serial.println(setPositionStatus);
+                    return setPositionStatus;
+                }
+
+                currentArr[numSteps] = fetchCurrentLog();
+                zposArr[numSteps] = zpos;
+                xposArr[numSteps] = xpos;
+                yposArr[numSteps] = ypos;
+
+                numSteps += 1;
+            }
+        }
+
+        direction = !direction;
+
+
+        //while (setPositionStatus == 0) setPositionStatus = setPositionStep(xStarting, ypos, setCurrent); TODO: ???
+        //currentBuf[numSteps] = current;
+
+        //Serial.print("status:");
+        //Serial.println(setPositionStatus);
+
+        //Serial.print("zpos:");
+        //Serial.println(zpos);
+
     }
 
     //Serial.print("time");
