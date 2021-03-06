@@ -29,7 +29,6 @@ ScanHead::ScanHead():
     SPI1.begin();
     SPI1.beginTransaction(SPISettings(300000, MSBFIRST, SPI_MODE3));
     delay(10);
-    tiafilter.setcoeffs(tia60hzbiquad);
 
     // Piezo
     pinMode(piezo.cs, OUTPUT);

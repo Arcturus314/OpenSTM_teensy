@@ -11,7 +11,7 @@
 #include "Stepper.h"
 #include "SPI.h"
 #include <CircularBuffer.h>
-#include "biquad.cpp"
+#include "sos.cpp"
 
 class ScanHead
 {
@@ -39,7 +39,7 @@ class ScanHead
         int fetchCurrentLog();
         void calibrateZeroCurrent();
         void sampleCurrent();
-        int scanTwoAxes(int *currentArr, int *zposArr, int *xposArr, int *yposArr, int sizeX, int sizeY, bool heightcontrol);
+        int scanTwoAxes(int *currentArr, int *zposArr, int *xposArr, int *yposArr, int sizeX, int sizeY, int step, bool heightcontrol);
         int scanOneAxis(int *currentArr, int *zposArr, int size, int step, bool direction, bool heightcontrol);
         void testScanHeadPosition(int numsteps, int stepsize);
 
@@ -63,7 +63,7 @@ class ScanHead
 
         float calibratedNoCurrent = 0; // This is re-measured when the STM boots.
 
-        Biquad tiafilter;
+        SOS tiafilter;
 
         Stepper stepper0;
         Stepper stepper1;
@@ -142,8 +142,6 @@ class ScanHead
         //gstop = 20
         //systemsos = signal.iirdesign(wp, ws, gpass, gstop, output='sos')
         //print(systemsos)
-
-        const double tia60hzbiquad[6] = {0.99884837,-1.99734223,0.99884837,1,-1.99772833,0.99808291};
 
 };
 
