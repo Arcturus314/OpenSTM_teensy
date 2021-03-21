@@ -79,7 +79,7 @@ void ScanHead::calibrateZeroCurrent() {
     // clearing initial current readout
     current = fetchCurrent();
 
-    delay(500);
+    delay(2000); // letting control loop stabilize
 
     calibratedNoCurrent = fetchCurrent();
     Serial.print("Calibrated zero-current to ");
@@ -374,7 +374,7 @@ int ScanHead::autoApproachStep(int zcurr_set, CircularBuffer<int,1000> &currentB
     return 0;
 }
 
-void ScanHead::sampleCurrent(CircularBuffer<int,50000> &buf) {
+void ScanHead::sampleCurrent() {
     /*!
      * \brief takes a single current sample for integration
      */
@@ -393,11 +393,11 @@ void ScanHead::sampleCurrent(CircularBuffer<int,50000> &buf) {
         digitalWrite(tia.cs, LOW);
         int receivedVal = receivedVal_high << 8 | receivedVal_low;
 
-        buf.push(receivedVal); // TODO: remove this
+        int filteredVal = (int) tiafilter.filter( (float) receivedVal);
 
-        currentSum += (int) tiafilter.filter( (float) receivedVal);
+        currentSum += filteredVal;
         currentSumRaw += receivedVal;
-        currentLogSum += receivedVal; // TODO: change to something with 60Hz filtering
+        currentLogSum += filteredVal;
     }
 
     numCurrentSamples += 1;
@@ -474,23 +474,23 @@ void ScanHead::setPiezo(int channel, int value) {
      */
 
 
-  status = 2;
+    status = 2;
 
-  unsigned int dacMSB = highByte(value);
-  unsigned int dacLSB = lowByte(value);
+    unsigned int dacMSB = highByte(value);
+    unsigned int dacLSB = lowByte(value);
 
-  byte command = 0b00000011;
-  byte addrD1  = lowByte(channel) << 4 | dacMSB >> 4;
-  byte addrD2  = dacMSB << 4 | dacLSB >> 4;
-  byte addrD3  = dacLSB << 4;
+    byte command = 0b00000011;
+    byte addrD1  = lowByte(channel) << 4 | dacMSB >> 4;
+    byte addrD2  = dacMSB << 4 | dacLSB >> 4;
+    byte addrD3  = dacLSB << 4;
 
 
-  digitalWrite(piezo.cs, LOW);
-  SPI.transfer(command);
-  SPI.transfer(addrD1);
-  SPI.transfer(addrD2);
-  SPI.transfer(addrD3);
-  digitalWrite(piezo.cs, HIGH);
+    digitalWrite(piezo.cs, LOW);
+    SPI.transfer(command);
+    SPI.transfer(addrD1);
+    SPI.transfer(addrD2);
+    SPI.transfer(addrD3);
+    digitalWrite(piezo.cs, HIGH);
 
 }
 
