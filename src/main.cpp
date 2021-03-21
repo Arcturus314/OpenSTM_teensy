@@ -32,7 +32,7 @@ void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &z
             current.push(scanhead->current);
             zpos.push(scanhead->zpos);
             ui->drawDisplay(scanhead);
-            //Serial.println(scanhead->fetchCurrent());
+            Serial.println(scanhead->fetchCurrent());
         }
     }
 
@@ -42,7 +42,9 @@ void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &z
 
     while (autoApproachStatus == 0) {
         Serial.print("approach step, currentRaw=");
-        Serial.println(scanhead->currentRaw);
+        Serial.print(scanhead->currentRaw);
+        Serial.print(" current=");
+        Serial.println(scanhead->current);
         autoApproachStatus = scanhead->autoApproachStep(setpoint, current, zpos);
         autoApproachSteps += 1;
         if (autoApproachSteps % 1 == 0) {
@@ -126,9 +128,9 @@ void scan1D() {
 void scan2D() {
     Serial.println("scanning in 2D");
 
-    int sizeX = 100;
-    int sizeY = 100;
-    int step = 10;
+    int sizeX = 50;
+    int sizeY = 50;
+    int step = 1;
 
     int numSteps = (sizeX * sizeY) / (step * step);
 
@@ -210,8 +212,8 @@ void setup() {
         Serial.println(zPosBuffer.shift());
     }
 
-    scan1D();
-    //scan2D();
+    //scan1D();
+    scan2D();
     for (int step = 0; step < 50; step++) scanhead->moveStepper(1, -10);
 
 }

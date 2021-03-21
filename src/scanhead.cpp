@@ -81,7 +81,8 @@ void ScanHead::calibrateZeroCurrent() {
 
     delay(2000); // letting control loop stabilize
 
-    calibratedNoCurrent = fetchCurrent();
+    current = fetchCurrent();
+    calibratedNoCurrent = currentRaw;
     Serial.print("Calibrated zero-current to ");
     Serial.print(calibratedNoCurrent);
     Serial.println("pA");
@@ -113,7 +114,7 @@ int ScanHead::setPositionStep(int xpos_set, int ypos_set, int zcurr_set) {
 
     float  xerr = (float) xpos_set-xpos;
     float  yerr = (float) ypos_set-ypos;
-    float  zerr = (float) zcurr_set-currentRaw;
+    float  zerr = (float) zcurr_set-current;
 
     float xDerErr = xerr-xPrevErr;
     float yDerErr = yerr-yPrevErr;
@@ -359,7 +360,7 @@ int ScanHead::autoApproachStep(int zcurr_set, CircularBuffer<int,1000> &currentB
     while (approachStatus == 0 or approachStatus == 1) {
         //Serial.println("loop step");
         approachStatus = setPositionStep(0,0,zcurr_set);
-        currentBuf.push(currentRaw); //TODO: exchange with not-raw
+        currentBuf.push(current); //TODO: exchange with not-raw
         zposBuf.push(zpos);
         //if (approachStatus != 0 and approachStatus != 1) {
         //    Serial.print("could not approach, returned status ");
@@ -568,8 +569,8 @@ int ScanHead::scanOneAxis(int *currentArr, int *zposArr, int size, int step, boo
         numSteps += 1;
     }
 
-    //Serial.print("time");
-    //Serial.println(testStart);
+    Serial.print("time");
+    Serial.println(testStart);
 
     //for (int i = 0; i < numSteps; i++) {
     //    Serial.println(currentBuf[i]);
