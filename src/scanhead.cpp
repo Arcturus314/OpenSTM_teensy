@@ -7,6 +7,7 @@
 
 #include "Arduino.h"
 #include "scanhead.h"
+#include <CircularBuffer.h>
 
 #include "SPI.h"
 
@@ -358,7 +359,7 @@ int ScanHead::autoApproachStep(int zcurr_set, CircularBuffer<int,1000> &currentB
     while (approachStatus == 0 or approachStatus == 1) {
         //Serial.println("loop step");
         approachStatus = setPositionStep(0,0,zcurr_set);
-        currentBuf.push(currentRaw);
+        currentBuf.push(currentRaw); //TODO: exchange with not-raw
         zposBuf.push(zpos);
         //if (approachStatus != 0 and approachStatus != 1) {
         //    Serial.print("could not approach, returned status ");
@@ -373,7 +374,7 @@ int ScanHead::autoApproachStep(int zcurr_set, CircularBuffer<int,1000> &currentB
     return 0;
 }
 
-void ScanHead::sampleCurrent() {
+void ScanHead::sampleCurrent(CircularBuffer<int,50000> &buf) {
     /*!
      * \brief takes a single current sample for integration
      */
@@ -391,6 +392,8 @@ void ScanHead::sampleCurrent() {
         delayMicroseconds(1);
         digitalWrite(tia.cs, LOW);
         int receivedVal = receivedVal_high << 8 | receivedVal_low;
+
+        buf.push(receivedVal); // TODO: remove this
 
         currentSum += (int) tiafilter.filter( (float) receivedVal);
         currentSumRaw += receivedVal;

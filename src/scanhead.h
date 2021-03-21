@@ -38,7 +38,7 @@ class ScanHead
         int fetchCurrent();
         int fetchCurrentLog();
         void calibrateZeroCurrent();
-        void sampleCurrent();
+        void sampleCurrent(CircularBuffer<int,50000> &buf); // TODO: remove buf
         int scanTwoAxes(int *currentArr, int *zposArr, int *xposArr, int *yposArr, int sizeX, int sizeY, int step, bool heightcontrol);
         int scanOneAxis(int *currentArr, int *zposArr, int size, int step, bool direction, bool heightcontrol);
         void testScanHeadPosition(int numsteps, int stepsize);

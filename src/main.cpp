@@ -161,8 +161,10 @@ void scan2D() {
 
 }
 
+CircularBuffer<int,50000> currentRawBufferFS;
+
 void sampleScanHeadCurrent() {
-    scanhead->sampleCurrent();
+    scanhead->sampleCurrent(currentRawBufferFS);
 }
 
 void setup() {
@@ -188,6 +190,14 @@ void setup() {
 
     ui->drawDisplay(scanhead);
     ui->updateInputs();
+
+    delay(5000);
+
+    Serial.println("Initial buffer readout");
+
+    for (int j = 0; j < 50000; j++) {
+        Serial.println(currentRawBufferFS.shift());
+    }
 
     // Initial Approach
 
