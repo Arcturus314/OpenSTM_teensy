@@ -59,6 +59,8 @@ void approachLoop(CircularBuffer<int,1000> &current, CircularBuffer<int,1000> &z
 void scan1D() {
     //// 1-D Scan, without height control
 
+    Serial.println("Scanning in 1D");
+
 
     int numpoints = 500;
     int step = 1;
@@ -128,9 +130,11 @@ void scan1D() {
 void scan2D() {
     Serial.println("scanning in 2D");
 
-    int sizeX = 50;
-    int sizeY = 50;
-    int step = 1;
+    // reference sample - 200nm spacing. So we want to cover 200nm -> 2000 points
+
+    int sizeX = 2000;
+    int sizeY = 2000;
+    int step = 50;
 
     int numSteps = (sizeX * sizeY) / (step * step);
 
@@ -161,6 +165,8 @@ void scan2D() {
         Serial.println(currentArr[step]);
     }
 
+    Serial.println("Returning");
+
 }
 
 
@@ -170,7 +176,7 @@ void sampleScanHeadCurrent() {
 
 void setup() {
     // Initial Setup
-    Serial.begin(9600);
+    Serial.begin(115200);
     delay(1000); // todo: remove
     Serial.println("OpenSTM V0.1 Startup...");
 
