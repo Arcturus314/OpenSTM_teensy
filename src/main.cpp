@@ -132,9 +132,9 @@ void scan2D() {
 
     // reference sample - 200nm spacing. So we want to cover 200nm -> 2000 points
 
-    int sizeX = 2000;
-    int sizeY = 2000;
-    int step =  20;
+    int sizeX = 1000;
+    int sizeY = 1000;
+    int step =  10;
 
     int numSteps = (sizeX * sizeY) / (step * step);
 

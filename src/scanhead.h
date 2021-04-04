@@ -105,7 +105,7 @@ class ScanHead
         const int   maxPiezo = 65535; // maximum valuable attainable by a single piezo channel
         const int   minPiezo = 0; // minimum valuable attainable by a single piezo channel
 
-        const float pidTransverseP = 1; // gain term in PID control for transverse axes
+        const float pidTransverseP = 1.0; // gain term in PID control for transverse axes
         const float pidZP = 0.5; // gain term in PID control for Z axis
         const float pidTransverseI = 0.0; // Integral term in PID control for transverse axes
         const float pidZI = 0.0;  // Integral term in PID control for Z axis
@@ -113,7 +113,7 @@ class ScanHead
         const float pidZD = 0.0; // Derivative term in PID control for Z axis
 
 
-        const int maxTransverseStep = 100; // largest one-cycle piezo step on the x-axis
+        const int maxTransverseStep = 5; // largest one-cycle piezo step on the x-axis
         const int maxZStep = 100;
 
         // PID internal use
