@@ -134,7 +134,7 @@ void scan2D() {
 
     int sizeX = 2000;
     int sizeY = 2000;
-    int step = 50;
+    int step =  20;
 
     int numSteps = (sizeX * sizeY) / (step * step);
 
@@ -144,6 +144,8 @@ void scan2D() {
     int zposArr[numSteps];
 
     int scanStatus = scanhead->scanTwoAxes(currentArr, zposArr, xposArr, yposArr, sizeX, sizeY, step, true);
+
+    for (int step = 0; step < 50; step++) scanhead->moveStepper(1, -10);
 
     Serial.print("Finished scan, returned with code ");
     Serial.println(scanStatus);
@@ -163,6 +165,7 @@ void scan2D() {
         Serial.print(zposArr[step]);
         Serial.print(",");
         Serial.println(currentArr[step]);
+        delay(1);
     }
 
     Serial.println("Returning");
@@ -221,7 +224,6 @@ void setup() {
     //scan1D();
     scan2D();
     for (int step = 0; step < 50; step++) scanhead->moveStepper(1, -10);
-
 }
 
 
